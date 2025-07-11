@@ -19,6 +19,7 @@ backend/prisma/dev.db
 backend/prisma/dev.db-journal
 backend/prisma/migrations/*/README.md
 backend/prisma/.DS_Store
+node_modules/
 
 # Logs
 npm-debug.log*
@@ -30,6 +31,7 @@ pnpm-debug.log*
 # Puppeteer cache (optional)
 .chromium/
 .puppeteer/
+backend/.cache/
 
 # OS & Editor
 .DS_Store

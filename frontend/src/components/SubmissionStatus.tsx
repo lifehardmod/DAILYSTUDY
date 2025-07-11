@@ -39,7 +39,6 @@ function getUserName(handle: string) {
 
 // 사유 라벨 목록
 const EXCUSE_LABELS = [
-  "돈 냈어요.",
   "다른 사이트를 이용했어요",
   "코테 혹은 시험이 있었어요",
   "다른 공부를 했어요",
@@ -263,9 +262,13 @@ export function SubmissionStatus() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [date, setDate] = useState(
-    () => new Date().toISOString().split("T")[0]
-  );
+  const [date, setDate] = useState(() => {
+    // 한국 시간대(UTC+9)를 고려한 날짜 계산
+    const now = new Date();
+    const kstOffset = 9 * 60; // 9시간을 분으로 변환
+    const kstTime = new Date(now.getTime() + kstOffset * 60 * 1000);
+    return kstTime.toISOString().split("T")[0];
+  });
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
@@ -312,8 +315,10 @@ export function SubmissionStatus() {
     const currentDate = new Date(year, month - 1, day);
     const today = new Date();
 
-    // 오늘 날짜와 비교 (시간 제외)
-    const todayStr = today.toISOString().split("T")[0];
+    // 오늘 날짜와 비교 (시간 제외) - 한국 시간대 고려
+    const kstOffset = 9 * 60; // 9시간을 분으로 변환
+    const kstTime = new Date(today.getTime() + kstOffset * 60 * 1000);
+    const todayStr = kstTime.toISOString().split("T")[0];
 
     if (date < todayStr) {
       currentDate.setDate(currentDate.getDate() + 1);
@@ -326,7 +331,10 @@ export function SubmissionStatus() {
 
   const isToday = () => {
     const today = new Date();
-    const todayStr = today.toISOString().split("T")[0];
+    // 한국 시간대 고려
+    const kstOffset = 9 * 60; // 9시간을 분으로 변환
+    const kstTime = new Date(today.getTime() + kstOffset * 60 * 1000);
+    const todayStr = kstTime.toISOString().split("T")[0];
     return date === todayStr;
   };
 
