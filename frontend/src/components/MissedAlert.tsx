@@ -24,7 +24,11 @@ export function MissedAlert({ failedUsers }: MissedAlertProps) {
         return;
       }
 
-      const text = names.join(", ") + " 제출!!!!제출!!!!제출!!!!제출!!!!";
+      // 성씨 제거 (한국 이름의 첫 글자 제거)
+      const firstNamesOnly = names.map((name) =>
+        name.length > 1 ? name.slice(1) : name
+      );
+      const text = firstNamesOnly.join(", ") + " 알고리즘 !!!!!!";
       await navigator.clipboard.writeText(text);
       alert("클립보드에 복사되었습니다!\n" + text);
     } catch {

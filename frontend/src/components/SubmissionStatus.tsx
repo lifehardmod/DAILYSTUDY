@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import type { SubmissionResponse } from "../types/submission";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +22,8 @@ import {
   Users,
   Clock,
   Trophy,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { USER_LIST } from "@/constants/userList";
 import { MissedAlert } from "./MissedAlert";
@@ -35,6 +38,7 @@ function getUserName(handle: string) {
 
 // 사유 라벨 목록
 const EXCUSE_LABELS = [
+  "돈 냈어요.",
   "다른 사이트를 이용했어요",
   "코테 혹은 시험이 있었어요",
   "다른 공부를 했어요",
@@ -182,11 +186,6 @@ function ExcuseModal({ isOpen, onClose, onSubmit }: ExcuseModalProps) {
 }
 
 export function SubmissionStatus() {
-  const [submissions, setSubmissions] = useState<SubmissionResponse | null>(
-    null
-  );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [date, setDate] = useState(
@@ -195,23 +194,65 @@ export function SubmissionStatus() {
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-  // 현황 새로고침 함수 분리 (date 반영)
-  const fetchSubmissions = async (targetDate = date) => {
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_URL}/submissions?date=${targetDate}`);
+  // TanStack Query를 사용한 데이터 페칭 및 캐싱
+  const {
+    data: submissions,
+    isLoading: loading,
+    error,
+    refetch: fetchSubmissions,
+  } = useQuery({
+    queryKey: ["submissions", date], // 날짜별로 캐시 분리
+    queryFn: async () => {
+      const response = await fetch(`${API_URL}/submissions?date=${date}`);
       if (!response.ok) {
         throw new Error("Failed to fetch submissions");
       }
-      const data = await response.json();
-      setSubmissions(data);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다."
-      );
-    } finally {
-      setLoading(false);
+      return response.json() as Promise<SubmissionResponse>;
+    },
+    staleTime: 2 * 60 * 1000, // 2분 동안 fresh 상태 유지
+    gcTime: 10 * 60 * 1000, // 10분 동안 캐시 유지
+  });
+
+  // 날짜 포맷 함수 추가
+  const formatDate = (dateStr: string) => {
+    const [year, month, day] = dateStr.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
+    const weekday = ["일", "월", "화", "수", "목", "금", "토"][date.getDay()];
+    return `${year}년 ${month}월 ${day}일 (${weekday})`;
+  };
+
+  // 날짜 이동 함수들 추가
+  const goToPreviousDay = () => {
+    const [year, month, day] = date.split("-").map(Number);
+    const currentDate = new Date(year, month - 1, day);
+    currentDate.setDate(currentDate.getDate() - 1);
+    const newYear = currentDate.getFullYear();
+    const newMonth = String(currentDate.getMonth() + 1).padStart(2, "0");
+    const newDay = String(currentDate.getDate()).padStart(2, "0");
+    setDate(`${newYear}-${newMonth}-${newDay}`);
+  };
+
+  const goToNextDay = () => {
+    const [year, month, day] = date.split("-").map(Number);
+    const currentDate = new Date(year, month - 1, day);
+    const today = new Date();
+
+    // 오늘 날짜와 비교 (시간 제외)
+    const todayStr = today.toISOString().split("T")[0];
+
+    if (date < todayStr) {
+      currentDate.setDate(currentDate.getDate() + 1);
+      const newYear = currentDate.getFullYear();
+      const newMonth = String(currentDate.getMonth() + 1).padStart(2, "0");
+      const newDay = String(currentDate.getDate()).padStart(2, "0");
+      setDate(`${newYear}-${newMonth}-${newDay}`);
     }
+  };
+
+  const isToday = () => {
+    const today = new Date();
+    const todayStr = today.toISOString().split("T")[0];
+    return date === todayStr;
   };
 
   const handleExcuse = async (excuse: { excuse: string }) => {
@@ -231,19 +272,13 @@ export function SubmissionStatus() {
       if (!response.ok) {
         throw new Error("Failed to submit excuse");
       }
-      // 성공 시 현황 새로고침
+      // 성공 시 현재 날짜 데이터만 새로고침
       await fetchSubmissions();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "알 수 없는 오류가 발생했습니다."
-      );
+      console.error(err);
+      alert("사유 제출 중 오류가 발생했습니다.");
     }
   };
-
-  useEffect(() => {
-    fetchSubmissions(date);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date]);
 
   if (loading) {
     return (
@@ -264,7 +299,9 @@ export function SubmissionStatus() {
               <h3 className="font-semibold text-gray-800">
                 오류가 발생했습니다
               </h3>
-              <p className="text-gray-600 text-sm mt-1">{error}</p>
+              <p className="text-gray-600 text-sm mt-1">
+                {error?.message || "알 수 없는 오류가 발생했습니다."}
+              </p>
             </div>
           </div>
         </div>
@@ -279,16 +316,7 @@ export function SubmissionStatus() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
-      {/* 날짜 선택 */}
-      <div className="flex justify-end mb-4">
-        <input
-          type="date"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="border rounded px-2 py-1"
-          max={new Date().toISOString().split("T")[0]}
-        />
-      </div>
+      {/* 날짜 선택 제거 */}
       {/* Header Section */}
       <div className="text-center space-y-4">
         <div className="inline-flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full border">
@@ -330,15 +358,40 @@ export function SubmissionStatus() {
       <div className="space-y-6">
         {/* 미제출자 복사 버튼 */}
         <div className="flex-row flex gap-2 justify-end">
-          <UpdateButton onUpdateSuccess={() => fetchSubmissions(date)} />
-          <MissedAlert failedUsers={failedUsers} />
-          <YesterdayMissedAlert />
+          <UpdateButton onUpdateSuccess={() => fetchSubmissions()} />
         </div>
+
+        {/* 날짜 선택 */}
+        <div className="flex items-center justify-center gap-4 py-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={goToPreviousDay}
+            className="flex items-center gap-1"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="text-lg font-semibold text-gray-800 px-4">
+            {formatDate(date)}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={goToNextDay}
+            disabled={isToday()}
+            className="flex items-center gap-1"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+
         {failedUsers.length > 0 && (
           <div>
             <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
               <XCircle className="h-5 w-5" />
-              미제출 ({failedUsers.length}명)
+              미제출 ({failedUsers.length}명){" "}
+              <YesterdayMissedAlert date={date} />
+              <MissedAlert failedUsers={failedUsers} />
             </h3>
             <div className="grid gap-4">
               {failedUsers.map((user) => (

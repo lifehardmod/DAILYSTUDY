@@ -2,21 +2,26 @@ import { Button } from "@/components/ui/button";
 import { USER_LIST } from "@/constants/userList";
 import { useState } from "react";
 
-function getYesterday() {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return d.toISOString().split("T")[0];
+// 날짜를 한국어 형식으로 포맷팅하는 함수
+function formatKoreanDate(dateStr: string) {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  const weekday = ["일", "월", "화", "수", "목", "금", "토"][date.getDay()];
+  return `${year}년 ${month}월 ${day}일 (${weekday})`;
 }
 
-export function YesterdayMissedAlert() {
+interface YesterdayMissedAlertProps {
+  date: string;
+}
+
+export function YesterdayMissedAlert({ date }: YesterdayMissedAlertProps) {
   const [loading, setLoading] = useState(false);
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-  const fetchYesterdayMissed = async () => {
+  const fetchMissed = async () => {
     setLoading(true);
     try {
-      const yesterday = getYesterday();
-      const response = await fetch(`${API_URL}/submissions?date=${yesterday}`);
+      const response = await fetch(`${API_URL}/submissions?date=${date}`);
       if (!response.ok) throw new Error("불러오기 실패");
       const data = await response.json();
       const failed = (data.users || []).filter(
@@ -28,10 +33,12 @@ export function YesterdayMissedAlert() {
         return userInfo ? userInfo.name : user.userId;
       });
       if (userNames.length === 0) {
-        alert("어제 미제출자가 없습니다!");
+        alert(`${formatKoreanDate(date)} 미제출자가 없습니다!`);
         return;
       }
-      const text = userNames.join(", ") + " 당첨!!당첨!!당첨!!당첨!!";
+      const text = `${formatKoreanDate(date)}\n당첨자 ${userNames.join(
+        ", "
+      )}, 당첨!!!`;
       await navigator.clipboard.writeText(text);
       alert("클립보드에 복사되었습니다!\n" + text);
     } catch {
@@ -44,11 +51,11 @@ export function YesterdayMissedAlert() {
   return (
     <Button
       size="sm"
-      onClick={fetchYesterdayMissed}
-      className="bg-orange-500 text-white"
+      onClick={fetchMissed}
+      className="bg-orange-500 text-white h-8"
       disabled={loading}
     >
-      돈낼사람
+      돈 주세요
     </Button>
   );
 }

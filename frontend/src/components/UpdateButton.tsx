@@ -29,7 +29,7 @@ export function UpdateButton({
       disabled={loading}
       className=" text-white h-[32px]"
     >
-      {loading ? "업데이트 중...(3분걸림)" : "업데이트(자주 누르지 말기..)"}
+      {loading ? "업데이트 중...(3분걸림)" : "업데이트 (자주 누르지 말기..)"}
     </Button>
   );
 }

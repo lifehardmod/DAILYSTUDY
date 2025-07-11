@@ -43,11 +43,16 @@ function getUserName(handle: string) {
 
 function getRecentWeeks(n: number): { start: Date; end: Date }[] {
   const result = [];
-  const d = new Date();
+  const today = new Date();
+
+  // 현재 주부터 시작
   for (let i = 0; i < n; i++) {
-    const { start, end } = getWeekRange(d);
+    // 현재 날짜에서 i주 전의 월요일을 계산
+    const targetDate = new Date(today);
+    targetDate.setDate(today.getDate() - i * 7);
+
+    const { start, end } = getWeekRange(targetDate);
     result.unshift({ start: new Date(start), end: new Date(end) });
-    d.setDate(start.getDate() - 1);
   }
   return result;
 }
@@ -64,6 +69,7 @@ export function WeeklyStats() {
   const [errorArr, setErrorArr] = useState<(string | null)[]>(
     Array(WEEK_COUNT).fill(null)
   );
+  // 현재 주 인덱스 (가장 최신)
   const [currentIdx, setCurrentIdx] = useState(WEEK_COUNT - 1);
 
   useEffect(() => {
@@ -131,12 +137,13 @@ export function WeeklyStats() {
   });
 
   return (
-    <div className="max-w-2xl mx-auto p-6 space-y-6">
+    <div className="max-w-2xl mx-auto p-6 space-y-6 bg-gray-50 rounded-lg border border-gray-200">
       <div className="flex items-center justify-between mb-2">
         <Button
           variant="ghost"
           onClick={() => setCurrentIdx((i) => Math.max(0, i - 1))}
           disabled={currentIdx === 0}
+          title="이전 주"
         >
           <ChevronLeft />
         </Button>
@@ -147,6 +154,7 @@ export function WeeklyStats() {
           variant="ghost"
           onClick={() => setCurrentIdx((i) => Math.min(WEEK_COUNT - 1, i + 1))}
           disabled={currentIdx === WEEK_COUNT - 1}
+          title="다음 주 (현재 주까지만)"
         >
           <ChevronRight />
         </Button>
