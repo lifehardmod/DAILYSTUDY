@@ -25,6 +25,7 @@ import {
 import { USER_LIST } from "@/constants/userList";
 import { MissedAlert } from "./MissedAlert";
 import { UpdateButton } from "./UpdateButton";
+import { YesterdayMissedAlert } from "./YesterdayMissedAlert";
 
 // handle(아이디)로 name(이름) 찾는 함수 추가
 function getUserName(handle: string) {
@@ -188,14 +189,17 @@ export function SubmissionStatus() {
   const [error, setError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [date, setDate] = useState(
+    () => new Date().toISOString().split("T")[0]
+  );
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 
-  // 현황 새로고침 함수 분리
-  const fetchSubmissions = async () => {
+  // 현황 새로고침 함수 분리 (date 반영)
+  const fetchSubmissions = async (targetDate = date) => {
+    setLoading(true);
     try {
-      const today = new Date().toISOString().split("T")[0];
-      const response = await fetch(`${API_URL}/submissions?date=${today}`);
+      const response = await fetch(`${API_URL}/submissions?date=${targetDate}`);
       if (!response.ok) {
         throw new Error("Failed to fetch submissions");
       }
@@ -213,7 +217,6 @@ export function SubmissionStatus() {
   const handleExcuse = async (excuse: { excuse: string }) => {
     if (!selectedUserId) return;
     try {
-      const today = new Date().toISOString().split("T")[0];
       const response = await fetch(`${API_URL}/excuse`, {
         method: "POST",
         headers: {
@@ -221,7 +224,7 @@ export function SubmissionStatus() {
         },
         body: JSON.stringify({
           userId: selectedUserId,
-          date: today,
+          date,
           excuse: excuse.excuse,
         }),
       });
@@ -238,8 +241,9 @@ export function SubmissionStatus() {
   };
 
   useEffect(() => {
-    fetchSubmissions();
-  }, []);
+    fetchSubmissions(date);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date]);
 
   if (loading) {
     return (
@@ -275,13 +279,22 @@ export function SubmissionStatus() {
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-8">
+      {/* 날짜 선택 */}
+      <div className="flex justify-end mb-4">
+        <input
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="border rounded px-2 py-1"
+          max={new Date().toISOString().split("T")[0]}
+        />
+      </div>
       {/* Header Section */}
       <div className="text-center space-y-4">
         <div className="inline-flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full border">
           <Users className="h-5 w-5 text-gray-600" />
           <span className="text-gray-800 font-medium">제출 현황</span>
         </div>
-
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
@@ -293,7 +306,6 @@ export function SubmissionStatus() {
               {passedUsers.length}명
             </p>
           </div>
-
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
             <div className="flex items-center justify-center gap-2">
               <XCircle className="h-5 w-5 text-gray-600" />
@@ -303,7 +315,6 @@ export function SubmissionStatus() {
               {failedUsers.length}명
             </p>
           </div>
-
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
             <div className="flex items-center justify-center gap-2">
               <Users className="h-5 w-5 text-gray-600" />
@@ -315,14 +326,63 @@ export function SubmissionStatus() {
           </div>
         </div>
       </div>
-
       {/* User Cards */}
       <div className="space-y-6">
-        {/* 미제출자 알림 컴포넌트 */}
+        {/* 미제출자 복사 버튼 */}
         <div className="flex-row flex gap-2 justify-end">
-          <UpdateButton onUpdateSuccess={fetchSubmissions} />{" "}
+          <UpdateButton onUpdateSuccess={() => fetchSubmissions(date)} />
           <MissedAlert failedUsers={failedUsers} />
+          <YesterdayMissedAlert />
         </div>
+        {failedUsers.length > 0 && (
+          <div>
+            <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+              <XCircle className="h-5 w-5" />
+              미제출 ({failedUsers.length}명)
+            </h3>
+            <div className="grid gap-4">
+              {failedUsers.map((user) => (
+                <div
+                  key={user.userId}
+                  className="bg-white border border-gray-200 rounded-xs shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <div className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center border">
+                          <span className="text-gray-700 font-semibold">
+                            {user.userId.charAt(0).toUpperCase()}
+                          </span>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-lg">
+                            {getUserName(user.userId)}
+                          </h4>
+                          <Badge className="bg-gray-100 text-gray-800 border-gray-300">
+                            <XCircle className="h-3 w-3 mr-1" />
+                            미제출
+                          </Badge>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedUserId(user.userId);
+                          setIsModalOpen(true);
+                        }}
+                        className="flex items-center gap-2 rounded-sm border-gray-600"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        사유 제출
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {passedUsers.length > 0 && (
           <div>
             <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
@@ -395,55 +455,6 @@ export function SubmissionStatus() {
                         ))}
                       </div>
                     )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {failedUsers.length > 0 && (
-          <div>
-            <h3 className="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
-              <XCircle className="h-5 w-5" />
-              미제출 ({failedUsers.length}명)
-            </h3>
-            <div className="grid gap-4">
-              {failedUsers.map((user) => (
-                <div
-                  key={user.userId}
-                  className="bg-white border border-gray-200 rounded-xs shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center border">
-                          <span className="text-gray-700 font-semibold">
-                            {user.userId.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-lg">
-                            {getUserName(user.userId)}
-                          </h4>
-                          <Badge className="bg-gray-100 text-gray-800 border-gray-300">
-                            <XCircle className="h-3 w-3 mr-1" />
-                            미제출
-                          </Badge>
-                        </div>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedUserId(user.userId);
-                          setIsModalOpen(true);
-                        }}
-                        className="flex items-center gap-2 rounded-sm border-gray-600"
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                        사유 제출
-                      </Button>
-                    </div>
                   </div>
                 </div>
               ))}

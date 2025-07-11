@@ -1,41 +1,49 @@
 import { Button } from "@/components/ui/button";
 import { USER_LIST } from "@/constants/userList";
+import { useState } from "react";
 
-// 성을 제외한 이름만 반환하는 함수
-function getFirstName(fullName: string) {
-  if (!fullName) return "";
-  return fullName.length > 1 ? fullName.slice(1) : fullName;
+interface MissedAlertProps {
+  failedUsers: { userId: string }[];
 }
 
-export function MissedAlert({
-  failedUsers,
-}: {
-  failedUsers: { userId: string }[];
-}) {
-  const names = failedUsers
-    .map((user) => {
-      const userInfo = USER_LIST.find((u) => u.handle === user.userId);
-      return userInfo ? getFirstName(userInfo.name) : user.userId;
-    })
-    .filter(Boolean);
+export function MissedAlert({ failedUsers }: MissedAlertProps) {
+  const [loading, setLoading] = useState(false);
 
   const handleCopy = async () => {
-    const text = names.join(", ") + " 제출!!!!";
+    setLoading(true);
     try {
+      const names = failedUsers
+        .map((user) => {
+          const userInfo = USER_LIST.find((u) => u.handle === user.userId);
+          return userInfo ? userInfo.name : user.userId;
+        })
+        .filter(Boolean);
+
+      if (names.length === 0) {
+        alert("오늘 미제출자가 없습니다!");
+        return;
+      }
+
+      const text = names.join(", ") + " 제출!!!!제출!!!!제출!!!!제출!!!!";
       await navigator.clipboard.writeText(text);
-      alert("클립보드에 복사되었습니다!");
+      alert("클립보드에 복사되었습니다!\n" + text);
     } catch {
       alert("복사에 실패했습니다.");
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (names.length === 0) return null;
+  if (failedUsers.length === 0) return null;
 
   return (
-    <div className="flex justify-end mb-2">
-      <Button size="sm" onClick={handleCopy} className="bg-red-500 text-white">
-        미제출자 알림 복사
-      </Button>
-    </div>
+    <Button
+      size="sm"
+      onClick={handleCopy}
+      className="bg-red-500 text-white"
+      disabled={loading}
+    >
+      미제출자 독촉하기
+    </Button>
   );
 }
