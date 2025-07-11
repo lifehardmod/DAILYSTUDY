@@ -24,6 +24,7 @@ import {
   Trophy,
   ChevronLeft,
   ChevronRight,
+  Info,
 } from "lucide-react";
 import { USER_LIST } from "@/constants/userList";
 import { MissedAlert } from "./MissedAlert";
@@ -185,8 +186,82 @@ function ExcuseModal({ isOpen, onClose, onSubmit }: ExcuseModalProps) {
   );
 }
 
+// 규칙 모달 컴포넌트 추가
+interface RulesModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+function RulesModal({ isOpen, onClose }: RulesModalProps) {
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Info className="h-5 w-5" />
+            1일1알고 규칙
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+            <h4 className="font-semibold text-gray-800 mb-3">📚 기본 규칙</h4>
+            <ul className="space-y-2 text-sm text-gray-700">
+              <li className="flex items-start gap-2">
+                <span className="font-medium">•</span>
+                <span>SQL or 알고리즘 풀기</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-medium">•</span>
+                <span>평일 실버 이상 or 프로그래머스 레벨2 이상 풀기</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-medium">•</span>
+                <span>
+                  그 외(주말, 공휴일 등) 골드 이상 or 프로그래머스 레벨3 이상
+                  풀기
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h4 className="font-semibold text-blue-800 mb-3">🎯 면제 조건</h4>
+            <ul className="space-y-2 text-sm text-blue-700">
+              <li className="flex items-start gap-2">
+                <span className="font-medium">•</span>
+                <span>
+                  어학 / 자격증 / 기업 테스트 (인적성제외) / 면접 당일은
+                  1일1알고 면제
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-medium">•</span>
+                <span>특정 시험 보는 주간에는 해당 시험 공부로 대체 가능</span>
+              </li>
+              <li className="flex items-start gap-2 ml-4">
+                <span className="font-medium">-</span>
+                <span className="text-xs">
+                  인증필수, 대체인 만큼 열공한 흔적이 있어야합니다
+                  <br />
+                  (ex. 정처기 모의시험 합격컷 넘기기)
+                </span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button onClick={onClose}>확인</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function SubmissionStatus() {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [date, setDate] = useState(
     () => new Date().toISOString().split("T")[0]
@@ -319,9 +394,18 @@ export function SubmissionStatus() {
       {/* 날짜 선택 제거 */}
       {/* Header Section */}
       <div className="text-center space-y-4">
-        <div className="inline-flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full border">
-          <Users className="h-5 w-5 text-gray-600" />
-          <span className="text-gray-800 font-medium">제출 현황</span>
+        <div className="flex items-center justify-center gap-4">
+          <div className="inline-flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full border">
+            <Users className="h-5 w-5 text-gray-600" />
+            <span className="text-gray-800 font-medium">제출 현황</span>
+          </div>
+          <div
+            onClick={() => setIsRulesModalOpen(true)}
+            className="inline-flex items-center gap-2 bg-gray-50 px-4 py-2 rounded-full border cursor-pointer hover:bg-gray-100 transition-colors"
+          >
+            <Info className="h-5 w-5 text-gray-600" />
+            <span className="text-gray-800 font-medium">규칙</span>
+          </div>
         </div>
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
@@ -523,6 +607,11 @@ export function SubmissionStatus() {
           setSelectedUserId(null);
         }}
         onSubmit={handleExcuse}
+      />
+
+      <RulesModal
+        isOpen={isRulesModalOpen}
+        onClose={() => setIsRulesModalOpen(false)}
       />
     </div>
   );
