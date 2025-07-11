@@ -2,7 +2,7 @@
 import express from "express";
 import prisma from "../lib/prisma";
 import { USER_LIST } from "../constants/users";
-import { parseSubmissions, SubmissionRecord } from "../utils/puppeteer";
+import { parseSubmissions } from "../utils/puppeteer";
 import { fetchProblemMeta } from "../utils/solvedac";
 import {
   isRecordable,
