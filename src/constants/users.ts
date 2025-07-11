@@ -1,0 +1,17 @@
+export const USER_LIST = [
+  { name: "배성훈", handle: "bsh7931" },
+  { name: "김나영", handle: "chuhini" },
+  { name: "강수진", handle: "codena_1025" },
+  { name: "임채준", handle: "dlacowns21" },
+  { name: "정예영", handle: "elitezer0" },
+  { name: "한재서", handle: "hanahyun1" },
+  { name: "김종명", handle: "jump6746" },
+  { name: "김용명", handle: "kunzatt2501" },
+  { name: "윤이영", handle: "laurayoon" },
+  { name: "오은지", handle: "oeg9176" },
+  { name: "이동욱", handle: "origin109" },
+  { name: "문종하", handle: "qq3477" },
+  { name: "김유정", handle: "t0mat0" },
+  { name: "서주원", handle: "tjwndnjs7" },
+  { name: "지유림", handle: "zyu22" },
+];

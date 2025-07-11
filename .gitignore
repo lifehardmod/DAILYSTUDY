@@ -1,0 +1,42 @@
+# Node.js dependencies
+/node_modules/
+
+# TypeScript output
+/dist/
+/build/
+/*.tsbuildinfo
+
+# Environment variables
+.env
+
+# Prisma
+/prisma/dev.db
+/prisma/dev.db-journal
+/prisma/migrations/*/README.md
+/prisma/.DS_Store
+/.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Puppeteer cache (if using Chromium download)
+.chromium/
+.puppeteer/
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Output from logs or debug
+*.log
+
+# Optional: compiled PDF/image artifacts, screenshots
+/screenshots/
+/output/
+/captures/

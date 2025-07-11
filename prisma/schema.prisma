@@ -1,0 +1,44 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model DailySubmission {
+  id         String   @id @default(uuid())
+  userId     String   @map("userid")
+  user       User     @relation(fields: [userId], references: [id])
+  date DateTime @map("date")
+  status     SubmissionStatus
+  submitTime String?  @map("submittime")
+  imageUrl   String?  @map("imageurl")
+  createdAt  DateTime @default(now()) @map("createdat")
+  problemId  Int      @map("problemid")
+  titleKo    String?  @map("titleko")
+  level      Int?     @map("level")
+  tier       String?  @map("tier")
+  @@unique([userId, date, problemId])
+  @@map("DailySubmission")
+}
+
+model User {
+  id        String   @id
+  name      String
+  handle    String
+  createdAt DateTime @default(now()) @map("createdat")
+  updatedAt DateTime @updatedAt       @map("updatedat")
+
+  submissions DailySubmission[]
+  @@map("User")
+}
+
+enum SubmissionStatus {
+  PASS
+  IMAGE
+
+  @@map("SubmissionStatus")
+}
+
