@@ -13,6 +13,8 @@ export interface SubmissionRecord {
 export async function parseSubmissions(
   handle: string
 ): Promise<SubmissionRecord[]> {
+  console.log(`[${handle}] 크롤링 시작...`);
+
   const browser = await puppeteer.launch({
     headless: true,
     args: [
@@ -120,9 +122,12 @@ export async function parseSubmissions(
         .filter((r) => !isNaN(r.problemId));
     });
 
+    console.log(
+      `[${handle}] 크롤링 성공! ${records.length}개의 제출 기록을 찾았습니다.`
+    );
     return records;
   } catch (error) {
-    console.error(`Puppeteer parsing error for ${handle}:`, error);
+    console.error(`[${handle}] 크롤링 실패:`, error);
     return [];
   } finally {
     await browser.close();
