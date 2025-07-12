@@ -23,7 +23,22 @@ router.get("/crawl", async (_req, res) => {
     action: "SKIPPED" | "RECORDED";
   }[] = [];
 
+  // 크롤링 시작 시간 기록 (한국 시간)
+  const startTime = new Date(
+    dayjs().tz("Asia/Seoul").format("YYYY-MM-DD HH:mm:ss.SSS") + "+09:00"
+  );
+  let crawlHistoryId: string | null = null;
+
   try {
+    // 크롤링 히스토리 시작 기록
+    const crawlHistory = await prisma.crawlHistory.create({
+      data: {
+        startTime,
+        endTime: startTime, // 임시로 같은 시간으로 설정
+        success: false, // 일단 false로 설정
+      },
+    });
+    crawlHistoryId = crawlHistory.id;
     for (const { handle } of USER_LIST) {
       // 유저별로 오늘자 RECORD(=PASS/IMAGE) 이미 DB에 있는 key
       const submissions = await parseSubmissions(handle);
@@ -33,70 +48,174 @@ router.get("/crawl", async (_req, res) => {
         const bTime = parseKoreanTimestamp(b.submitTime).getTime();
         return aTime - bTime;
       });
-      // 로컬 Set: 이번 실행 중에 이미 RECORDED 한 문제를 SKIP
-      const recordedSet = new Set<string>();
 
-      for (const { problemId, submitTime } of submissions) {
-        // 1) submitTime → Date 객체(연·월·일만)
-        const fullDate = parseKoreanTimestamp(submitTime);
+      // 날짜별로 제출 그룹화
+      const submissionsByDate = new Map<string, typeof submissions>();
+      for (const submission of submissions) {
+        const fullDate = parseKoreanTimestamp(submission.submitTime);
         const kstDate = dayjs(fullDate).tz("Asia/Seoul").startOf("day");
-        // UTC offset을 보정하여 저장
+        const dateKey = kstDate.format("YYYY-MM-DD");
+
+        if (!submissionsByDate.has(dateKey)) {
+          submissionsByDate.set(dateKey, []);
+        }
+        submissionsByDate.get(dateKey)!.push(submission);
+      }
+
+      // 날짜별로 처리
+      for (const [dateKey, daySubmissions] of submissionsByDate) {
+        const kstDate = dayjs(dateKey).tz("Asia/Seoul");
         const dateObj = kstDate.add(9, "hour").toDate();
+        const dayOfWeek = kstDate.day(); // 0=일요일, 6=토요일
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
-        const key = `${handle}|${dateObj
-          .toISOString()
-          .slice(0, 10)}|${problemId}`;
-
-        // 2) DB에 PASS/IMAGE 로 이미 기록된 건 스킵
-        const exists = await prisma.dailySubmission.findFirst({
+        // 이미 DB에 기록된 문제들 확인
+        const existingRecords = await prisma.dailySubmission.findMany({
           where: {
             userId: handle,
-            problemId: problemId,
             date: dateObj,
           },
         });
 
-        // PASS 또는 IMAGE면 skip
-        if (exists && ["PASS", "IMAGE"].includes(exists.status)) {
-          results.push({ handle, problemId, action: "SKIPPED" });
+        const existingPassOrImage = new Set(
+          existingRecords
+            .filter(
+              (r) =>
+                ["PASS", "IMAGE"].includes(r.status) && r.problemId !== null
+            )
+            .map((r) => r.problemId!)
+        );
+
+        // 새로 처리할 제출들 (이미 PASS/IMAGE로 기록된 것 제외)
+        const newSubmissions = daySubmissions.filter(
+          (s) => !existingPassOrImage.has(s.problemId)
+        );
+
+        if (newSubmissions.length === 0) {
+          // 모든 제출이 이미 처리됨
+          for (const submission of daySubmissions) {
+            results.push({
+              handle,
+              problemId: submission.problemId,
+              action: "SKIPPED",
+            });
+          }
           continue;
         }
 
-        // 3) Solved.ac 메타 조회
-        const { titleKo, level } = await fetchProblemMeta(problemId);
+        // 주말 특별 처리: 골드 1개 또는 실버 이상 2개 확인
+        if (isWeekend) {
+          // 메타 정보 먼저 가져오기
+          const submissionsWithMeta = await Promise.all(
+            newSubmissions.map(async (submission) => {
+              const { titleKo, level } = await fetchProblemMeta(
+                submission.problemId
+              );
+              return { ...submission, titleKo, level };
+            })
+          );
 
-        // 4) 요일·레벨 검사
-        if (!isRecordable(submitTime, level)) {
-          results.push({ handle, problemId, action: "SKIPPED" });
-          continue;
+          // 골드 이상 (level >= 11) 문제 개수 확인
+          const goldOrAbove = submissionsWithMeta.filter((s) => s.level >= 11);
+          // 실버 이상 (level >= 6) 문제 개수 확인
+          const silverOrAbove = submissionsWithMeta.filter((s) => s.level >= 6);
+
+          // 골드 이상 1개가 있거나, 실버 이상 2개가 있으면 모든 문제를 PASS로 처리
+          if (goldOrAbove.length >= 1 || silverOrAbove.length >= 2) {
+            for (const submission of submissionsWithMeta) {
+              const tier = levelToTier(submission.level);
+
+              await prisma.dailySubmission.create({
+                data: {
+                  userId: handle,
+                  date: dateObj,
+                  status: "PASS",
+                  submitTime: submission.submitTime,
+                  problemId: submission.problemId,
+                  titleKo: submission.titleKo,
+                  level: submission.level,
+                  tier,
+                },
+              });
+
+              results.push({
+                handle,
+                problemId: submission.problemId,
+                action: "RECORDED",
+              });
+            }
+            continue;
+          }
         }
 
-        // 5) Tier 계산
-        const tier = levelToTier(level);
+        // 기존 로직: 개별 제출 처리
+        for (const { problemId, submitTime } of newSubmissions) {
+          const { titleKo, level } = await fetchProblemMeta(problemId);
 
-        // 6) DB에 CREATE (PASS)
-        await prisma.dailySubmission.create({
-          data: {
-            userId: handle,
-            date: dateObj,
-            status: "PASS",
-            submitTime,
-            problemId,
-            titleKo,
-            level,
-            tier,
-          },
-        });
+          // 요일·레벨 검사
+          if (!isRecordable(submitTime, level)) {
+            results.push({ handle, problemId, action: "SKIPPED" });
+            continue;
+          }
 
-        // 중복 방지
-        recordedSet.add(key);
-        results.push({ handle, problemId, action: "RECORDED" });
+          // Tier 계산
+          const tier = levelToTier(level);
+
+          // DB에 CREATE (PASS)
+          await prisma.dailySubmission.create({
+            data: {
+              userId: handle,
+              date: dateObj,
+              status: "PASS",
+              submitTime,
+              problemId,
+              titleKo,
+              level,
+              tier,
+            },
+          });
+
+          results.push({ handle, problemId, action: "RECORDED" });
+        }
       }
+    }
+
+    // 크롤링 성공 시 히스토리 업데이트
+    if (crawlHistoryId) {
+      await prisma.crawlHistory.update({
+        where: { id: crawlHistoryId },
+        data: {
+          endTime: new Date(
+            dayjs().tz("Asia/Seoul").format("YYYY-MM-DD HH:mm:ss.SSS")
+          ),
+          success: true,
+          recordsProcessed: results.filter((r) => r.action === "RECORDED")
+            .length,
+        },
+      });
     }
 
     return res.json({ results });
   } catch (e) {
     console.error(e);
+
+    // 크롤링 실패 시 히스토리 업데이트
+    if (crawlHistoryId) {
+      try {
+        await prisma.crawlHistory.update({
+          where: { id: crawlHistoryId },
+          data: {
+            endTime: new Date(
+              dayjs().tz("Asia/Seoul").format("YYYY-MM-DD HH:mm:ss.SSS")
+            ),
+            success: false,
+          },
+        });
+      } catch (historyError) {
+        console.error("히스토리 업데이트 실패:", historyError);
+      }
+    }
+
     return res.status(500).json({ error: (e as Error).message });
   }
 });

@@ -8,31 +8,43 @@ datasource db {
 }
 
 model DailySubmission {
-  id         String   @id @default(uuid())
-  userId     String   @map("userid")
-  user       User     @relation(fields: [userId], references: [id])
-  date DateTime @map("date")
+  id         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId     String            @map("userid") @db.VarChar
+  date       DateTime          @map("date") @db.Date
+  submitTime String?           @map("submittime") @db.VarChar
+  excuse     String?           @map("excuse")
+  createdAt  DateTime?         @default(now()) @map("createdat") @db.Timestamptz(6)
+  problemId  Int?              @map("problemid")
+  titleKo    String?           @map("titleko")
+  level      Int?              @map("level")
+  tier       String?           @map("tier")
   status     SubmissionStatus
-  submitTime String?  @map("submittime")
-  excuse     String?  @map("excuse")
-  createdAt  DateTime @default(now()) @map("createdat")
-  problemId  Int?      @map("problemid")
-  titleKo    String?  @map("titleko")
-  level      Int?     @map("level")
-  tier       String?  @map("tier")
-  @@unique([userId, date, problemId])
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([userId, date, problemId], map: "DailySubmission_userid_date_problemId_key")
   @@map("DailySubmission")
 }
 
 model User {
-  id        String   @id
-  name      String
-  handle    String
-  createdAt DateTime @default(now()) @map("createdat")
-  updatedAt DateTime @updatedAt       @map("updatedat")
-
+  id          String            @id @db.VarChar
+  name        String            @db.VarChar
+  handle      String            @db.VarChar
+  createdAt   DateTime?         @default(now()) @map("createdat") @db.Timestamptz(6)
+  updatedAt   DateTime?         @default(now()) @updatedAt @map("updatedat") @db.Timestamptz(6)
   submissions DailySubmission[]
+
   @@map("User")
+}
+
+model CrawlHistory {
+  id        String   @id @default(uuid())
+  startTime DateTime @map("starttime") @db.Timestamptz(6)
+  endTime   DateTime @map("endtime") @db.Timestamptz(6)
+  success   Boolean  @default(true)
+  recordsProcessed Int? @map("recordsprocessed")
+  createdAt DateTime @default(now()) @map("createdat") @db.Timestamptz(6)
+  
+  @@map("CrawlHistory")
 }
 
 enum SubmissionStatus {
@@ -41,4 +53,3 @@ enum SubmissionStatus {
 
   @@map("SubmissionStatus")
 }
-
