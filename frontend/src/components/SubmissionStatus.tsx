@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { USER_LIST } from "@/constants/userList";
 import { MissedAlert } from "./MissedAlert";
-import { UpdateButton } from "./UpdateButton";
+// import { UpdateButton } from "./UpdateButton";
 import { YesterdayMissedAlert } from "./YesterdayMissedAlert";
 
 // handle(아이디)로 name(이름) 찾는 함수 추가
