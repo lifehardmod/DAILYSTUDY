@@ -48,8 +48,9 @@ export function UpdateButton({
     const date = new Date(timeString);
     // 한국 시간대(UTC+9)를 고려한 현재 시간 계산
     const now = new Date();
+    const koreanTime = now.getTime() + 9 * 60 * 60 * 1000; // UTC+9 시간대 적용
 
-    const diffMs = now.getTime() - date.getTime();
+    const diffMs = koreanTime - date.getTime();
     const diffMinutes = Math.floor(diffMs / (1000 * 60));
     const diffHours = Math.floor(diffMinutes / 60);
     const diffDays = Math.floor(diffHours / 24);
