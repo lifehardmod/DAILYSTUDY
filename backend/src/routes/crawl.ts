@@ -47,7 +47,7 @@ router.get("/crawl", async (_req, res) => {
           .toISOString()
           .slice(0, 10)}|${problemId}`;
 
-        // 2) DB에 PASS/IMAGE 로 이미 기록된 건 스킵
+        // 2) DB에 이미 기록된 건 스킵 (unique constraint 때문에)
         const exists = await prisma.dailySubmission.findFirst({
           where: {
             userId: handle,
@@ -56,8 +56,8 @@ router.get("/crawl", async (_req, res) => {
           },
         });
 
-        // PASS 또는 IMAGE면 skip
-        if (exists && ["PASS", "IMAGE"].includes(exists.status)) {
+        // 이미 존재하는 데이터가 있으면 skip
+        if (exists) {
           results.push({ handle, problemId, action: "SKIPPED" });
           continue;
         }

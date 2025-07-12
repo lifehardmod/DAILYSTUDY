@@ -448,10 +448,10 @@ export function SubmissionStatus() {
       </div>
       {/* User Cards */}
       <div className="space-y-6">
-        {/* 미제출자 복사 버튼 */}
+        {/* 미제출자 복사 버튼
         <div className="flex-row flex gap-2 justify-end">
           <UpdateButton onUpdateSuccess={() => fetchSubmissions()} />
-        </div>
+        </div> */}
 
         {/* 날짜 선택 */}
         <div className="flex items-center justify-center gap-4 py-4">
