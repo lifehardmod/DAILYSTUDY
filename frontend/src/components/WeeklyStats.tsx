@@ -16,7 +16,11 @@ function getWeekRange(date: Date) {
 }
 
 function formatDate(date: Date) {
-  return date.toISOString().slice(0, 10);
+  // 한국 시간대 기준으로 정확한 날짜 포맷팅
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function getWeekLabel(start: Date, end: Date) {
@@ -27,7 +31,7 @@ function getWeekLabel(start: Date, end: Date) {
 
 interface UserStat {
   userId: string;
-  missingCount: number;
+  payedCount: number;
 }
 interface StatsResponse {
   startDate: string;
@@ -43,13 +47,15 @@ function getUserName(handle: string) {
 
 function getRecentWeeks(n: number): { start: Date; end: Date }[] {
   const result = [];
+  // 한국 시간대 기준으로 오늘 날짜 계산
   const today = new Date();
+  const koreaToday = new Date(today.getTime() + 9 * 60 * 60 * 1000); // UTC+9
 
   // 현재 주부터 시작
   for (let i = 0; i < n; i++) {
     // 현재 날짜에서 i주 전의 월요일을 계산
-    const targetDate = new Date(today);
-    targetDate.setDate(today.getDate() - i * 7);
+    const targetDate = new Date(koreaToday);
+    targetDate.setDate(koreaToday.getDate() - i * 7);
 
     const { start, end } = getWeekRange(targetDate);
     result.unshift({ start: new Date(start), end: new Date(end) });
@@ -119,20 +125,22 @@ export function WeeklyStats() {
   const loading = loadingArr[currentIdx];
   const error = errorArr[currentIdx];
 
-  // 미제출자만 추출 (missingCount > 0)
-  const missedUsers = (
-    stats?.users.filter((u) => u.missingCount > 0) || []
-  ).sort((a, b) => b.missingCount - a.missingCount);
-  // 1등(미제출 가장 많은 사람) 찾기
-  const maxMissed =
-    missedUsers.length > 0
-      ? Math.max(...missedUsers.map((u) => u.missingCount))
+  // 납부한 사람들 추출 (payedCount > 0)
+  const payedUsers = (stats?.users.filter((u) => u.payedCount > 0) || []).sort(
+    (a, b) => b.payedCount - a.payedCount
+  );
+
+  // 1등(가장 많이 납부한 사람) 찾기
+  const maxPayed =
+    payedUsers.length > 0
+      ? Math.max(...payedUsers.map((u) => u.payedCount))
       : 0;
+
   // 이름(횟수) + 1등 트로피
-  const missedNames = missedUsers.map((u) => {
+  const payedNames = payedUsers.map((u) => {
     const name = getUserName(u.userId);
-    const count = u.missingCount;
-    const isTop = count === maxMissed && maxMissed > 0;
+    const count = u.payedCount;
+    const isTop = count === maxPayed && maxPayed > 0;
     return `${name}(${count}회)${isTop ? "🏆" : ""}`;
   });
 
@@ -167,10 +175,10 @@ export function WeeklyStats() {
           <div className="text-red-500">{error}</div>
         ) : (
           <div className="text-center text-base font-medium">
-            {missedNames.length > 0 ? (
-              <span>{missedNames.join(", ")}</span>
+            {payedNames.length > 0 ? (
+              <span>{payedNames.join(", ")}</span>
             ) : (
-              <span>미제출자 없음</span>
+              <span>납부자 없음</span>
             )}
           </div>
         )}
