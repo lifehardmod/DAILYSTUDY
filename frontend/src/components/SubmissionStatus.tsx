@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -28,7 +27,7 @@ import {
 } from "lucide-react";
 import { USER_LIST } from "@/constants/userList";
 import { MissedAlert } from "./MissedAlert";
-// import { UpdateButton } from "./UpdateButton";
+import { UpdateButton } from "./UpdateButton";
 import { YesterdayMissedAlert } from "./YesterdayMissedAlert";
 
 // handle(아이디)로 name(이름) 찾는 함수 추가
@@ -42,6 +41,7 @@ const EXCUSE_LABELS = [
   "다른 사이트를 이용했어요",
   "코테 혹은 시험이 있었어요",
   "다른 공부를 했어요",
+  "납부 완료",
   "기타 사유",
 ];
 
@@ -70,8 +70,15 @@ function ExcuseModal({ isOpen, onClose, onSubmit }: ExcuseModalProps) {
       return;
     }
 
+    let excuseValue = selectedLabel;
+    if (selectedLabel === "기타 사유") {
+      excuseValue = otherDetail;
+    } else if (selectedLabel === "납부 완료") {
+      excuseValue = "payed";
+    }
+
     onSubmit({
-      excuse: selectedLabel === "기타 사유" ? otherDetail : selectedLabel,
+      excuse: excuseValue,
     });
     onClose();
     // Reset states
@@ -98,11 +105,6 @@ function ExcuseModal({ isOpen, onClose, onSubmit }: ExcuseModalProps) {
             <MessageSquare className="h-5 w-5" />
             미제출 사유 등록
           </DialogTitle>
-          <DialogDescription>
-            {!showKakaoCheck
-              ? "미제출 사유를 선택해주세요."
-              : "카카오톡에 먼저 인증을 올려주세요."}
-          </DialogDescription>
         </DialogHeader>
 
         {!showKakaoCheck ? (
@@ -149,9 +151,12 @@ function ExcuseModal({ isOpen, onClose, onSubmit }: ExcuseModalProps) {
           </div>
         ) : (
           <div className="space-y-4">
-            <p className=" bg-gray-50 font-semibold">
-              카카오톡 방에 인증 사진을 올리셨나요?
-            </p>
+            <div className="flex flex-col ml-1">
+              <p className=" font-semibold">
+                카카오톡 방에 인증 사진을 올리셨나요?
+              </p>
+              <p className=" font-semibold">혹은, 벌금 납부 후 알리셨나요?</p>
+            </div>
             <div className="flex items-center space-x-3 p-3 border border-gray-200 rounded-lg">
               <Checkbox
                 id="kakao-confirm"
@@ -161,7 +166,7 @@ function ExcuseModal({ isOpen, onClose, onSubmit }: ExcuseModalProps) {
                 }
               />
               <Label htmlFor="kakao-confirm" className="cursor-pointer text-sm">
-                네, 올렸습니다
+                네
               </Label>
             </div>
           </div>
@@ -367,7 +372,17 @@ export function SubmissionStatus() {
     return (
       <div className="flex flex-col items-center justify-center p-12 space-y-4">
         <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 border-t-gray-600"></div>
-        <p className="text-gray-600 font-medium">제출 현황을 불러오는 중...</p>
+        <div className="flex flex-col items-center justify-center">
+          <p className="text-gray-600 font-medium">
+            Render Free 버전 사용중이라서
+          </p>
+          <p className="text-gray-600 font-medium">
+            15분이 지나면 서버가 꺼졌다가 API 요청하면 다시 서버가 켜져요.
+          </p>
+          <p className="text-gray-600 font-medium">
+            나갔다 오셔도 되고 1분정도 걸립니다.
+          </p>
+        </div>
       </div>
     );
   }
@@ -448,11 +463,10 @@ export function SubmissionStatus() {
       </div>
       {/* User Cards */}
       <div className="space-y-6">
-        {/* 미제출자 복사 버튼
+        {/* 미제출자 복사 버튼*/}
         <div className="flex-row flex gap-2 justify-end">
           <UpdateButton onUpdateSuccess={() => fetchSubmissions()} />
-        </div> */}
-
+        </div>
         {/* 날짜 선택 */}
         <div className="flex items-center justify-center gap-4 py-4">
           <Button
@@ -492,7 +506,7 @@ export function SubmissionStatus() {
                   className="bg-white border border-gray-200 rounded-xs shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="p-6">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center border">
                           <span className="text-gray-700 font-semibold">
@@ -541,7 +555,7 @@ export function SubmissionStatus() {
                   className="bg-white border border-gray-200 rounded-xs shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="p-6">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center border">
                           <span className="text-gray-700 font-semibold">
@@ -571,7 +585,10 @@ export function SubmissionStatus() {
                                 <MessageSquare className="h-4 w-4 mt-0.5 text-gray-600" />
                                 <div>
                                   <p className="text-sm text-black font-medium">
-                                    사유: {problem.excuse}
+                                    사유:{" "}
+                                    {problem.excuse === "payed"
+                                      ? "납부 완료"
+                                      : problem.excuse}
                                   </p>
                                 </div>
                               </div>
