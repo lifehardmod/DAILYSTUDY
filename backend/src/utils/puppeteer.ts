@@ -1,5 +1,5 @@
-// src/utils/puppeteer.ts
-import puppeteer from "puppeteer";
+import axios from "axios";
+import * as cheerio from "cheerio";
 
 export interface SubmissionRecord {
   problemId: number;
@@ -7,129 +7,66 @@ export interface SubmissionRecord {
 }
 
 /**
- * 주어진 BOJ handle의 상태 페이지를 크롤링하여
- * 모든 제출 행에서 problemId와 submitTime을 추출합니다.
+ * 주어진 BOJ handle의 상태 페이지를 axios+cheerio로 크롤링하여
+ * problemId와 submitTime을 추출합니다.
  */
 export async function parseSubmissions(
   handle: string
 ): Promise<SubmissionRecord[]> {
   console.log(`[${handle}] 크롤링 시작...`);
 
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: [
-      "--no-sandbox",
-      "--disable-setuid-sandbox",
-      "--disable-dev-shm-usage", // 메모리 사용량 최적화
-      "--disable-gpu", // GPU 사용 비활성화
-      "--no-first-run",
-      "--disable-default-apps",
-      "--disable-sync",
-      "--no-default-browser-check",
-      "--mute-audio", // 오디오 비활성화
-      "--disable-web-security",
-      "--disable-features=TranslateUI", // 번역 UI 비활성화
-      "--disable-features=VizDisplayCompositor",
-      // --single-process 제거 (안정성 문제)
-      // 너무 공격적인 최적화 제거
-    ],
+  const url = `https://www.acmicpc.net/status?user_id=${handle}&result_id=4`;
+  const { data: html } = await axios.get(url, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/114.0.0.0 Safari/537.36",
+      "Accept-Language": "ko-KR,ko;q=0.9",
+    },
   });
 
-  try {
-    const page = await browser.newPage();
+  const $ = cheerio.load(html);
+  const rows = $("#status-table tbody tr");
+  console.log(`📊 rows 개수: ${rows.length}`);
 
-    // 메모리 사용량 최적화를 위한 viewport 설정
-    await page.setViewport({ width: 1280, height: 720 });
-
-    // 불필요한 리소스 차단으로 로딩 속도 향상 (이미지와 폰트만 차단)
-    await page.setRequestInterception(true);
-    page.on("request", (req) => {
-      const resourceType = req.resourceType();
-      // CSS는 레이아웃에 영향을 줄 수 있으므로 이미지와 폰트만 차단
-      if (["image", "font", "media"].includes(resourceType)) {
-        req.abort();
-      } else {
-        req.continue();
-      }
-    });
-
-    await page.setUserAgent(
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36"
-    );
-    await page.setExtraHTTPHeaders({ "Accept-Language": "ko-KR,ko;q=0.9" });
-
-    const url = `https://www.acmicpc.net/status?user_id=${handle}&result_id=4`;
-
-    // 페이지 로딩 안정성 개선
-    await page.goto(url, {
-      waitUntil: "domcontentloaded",
-      timeout: 0, // 무제한 대기
-    });
-
-    // 페이지 안정화를 위한 짧은 대기
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    // 더 안전한 셀렉터 대기 전략
-    try {
-      await page.waitForSelector("#status-table", { timeout: 0 });
-      await page.waitForSelector("#status-table tbody", { timeout: 0 });
-      await page.waitForSelector("#status-table tbody tr", { timeout: 0 });
-    } catch (selectorError) {
-      console.warn(
-        `Selector wait failed for ${handle}, trying alternative approach:`,
-        selectorError
-      );
-      // 대안적 접근: 페이지가 로드되었는지 확인
-      const hasTable = await page.$("#status-table");
-      if (!hasTable) {
-        throw new Error("Status table not found on page");
-      }
+  const records: SubmissionRecord[] = [];
+  rows.each((_, el) => {
+    const $row = $(el);
+    // 문제 번호
+    const link = $row.find("a.problem_title");
+    let problemId = NaN;
+    const dataId = link.attr("data-original-id");
+    if (dataId && /^\d+$/.test(dataId)) {
+      problemId = Number(dataId);
+    } else {
+      const href = link.attr("href") || "";
+      const m = href.match(/\/problem\/(\d+)/);
+      if (m) problemId = Number(m[1]);
     }
 
-    // 모든 <tr>을 순회하며 problemId, submitTime 추출
-    const records = await page.evaluate(() => {
-      const table = document.querySelector("#status-table");
-      if (!table) return [];
+    const ts = $row.find("td").eq(8).find("a").attr("data-timestamp");
+    let submitTime = "";
+    if (ts && /^\d+$/.test(ts)) {
+      const date = new Date(parseInt(ts, 10) * 1000);
+      const year = date.getFullYear();
+      const month = date.getMonth() + 1;
+      const day = date.getDate();
+      const hour = date.getHours();
+      const minute = date.getMinutes();
+      const second = date.getSeconds();
 
-      const rows = Array.from(table.querySelectorAll("tbody tr"));
-      if (rows.length === 0) return [];
+      submitTime = `${year}년 ${month}월 ${day}일 ${hour
+        .toString()
+        .padStart(2, "0")}:${minute.toString().padStart(2, "0")}:${second
+        .toString()
+        .padStart(2, "0")}`;
+    }
 
-      return rows
-        .map((row) => {
-          const link = row.querySelector<HTMLAnchorElement>("a.problem_title");
-          const rawId = link?.getAttribute("data-original-id") ?? "";
-          let problemId = NaN;
+    if (!isNaN(problemId) && submitTime) {
+      records.push({ problemId, submitTime });
+      console.log(`✅ ${problemId} / ${submitTime}`);
+    }
+  });
 
-          // data-original-id가 유효한 숫자 문자열인지 먼저 검사
-          if (rawId && /^\d+$/.test(rawId)) {
-            problemId = Number(rawId);
-          } else {
-            // 페일백: href에서 숫자 파싱
-            const href = link?.getAttribute("href") ?? "";
-            const m = href.match(/\/problem\/(\d+)/);
-            if (m) problemId = Number(m[1]);
-          }
-
-          const cells = row.querySelectorAll<HTMLTableCellElement>("td");
-          const submitTimeCell = cells[8];
-          const submitTime =
-            submitTimeCell
-              ?.querySelector<HTMLAnchorElement>("a")
-              ?.getAttribute("data-original-title") || "";
-
-          return { problemId, submitTime };
-        })
-        .filter((r) => !isNaN(r.problemId));
-    });
-
-    console.log(
-      `[${handle}] 크롤링 성공! ${records.length}개의 제출 기록을 찾았습니다.`
-    );
-    return records;
-  } catch (error) {
-    console.error(`[${handle}] 크롤링 실패:`, error);
-    return [];
-  } finally {
-    await browser.close();
-  }
+  console.log(`[${handle}] 크롤링 완료: ${records.length}개`);
+  return records;
 }

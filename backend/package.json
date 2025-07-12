@@ -15,12 +15,15 @@
   "dependencies": {
     "@prisma/client": "^6.11.1",
     "@supabase/supabase-js": "^2.50.5",
+    "@types/axios": "^0.14.4",
+    "@types/cheerio": "^1.0.0",
+    "axios": "^1.10.0",
+    "cheerio": "^1.1.0",
     "cors": "^2.8.5",
     "dayjs": "^1.11.13",
     "dotenv": "^17.2.0",
     "express": "^5.1.0",
-    "prisma": "^6.11.1",
-    "puppeteer": "^24.12.1"
+    "prisma": "^6.11.1"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

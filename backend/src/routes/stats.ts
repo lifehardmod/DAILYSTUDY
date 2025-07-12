@@ -43,12 +43,14 @@ router.get("/", async (req, res) => {
   }
 
   // 시작일이 오늘이거나 이후면 에러
-  if (!startDate.isBefore(now)) {
-    return res.status(400).json({ error: "시작일은 오늘 이전이어야 합니다" });
+  if (!startDate.isBefore(now) && !startDate.isSame(now, "day")) {
+    return res
+      .status(400)
+      .json({ error: "시작일은 오늘 또는 이전이어야 합니다" });
   }
 
-  // 종료일이 오늘이거나 이후면 어제까지만, 아니면 종료일까지
-  const effectiveEndDate = endDate.isBefore(now) ? endDate : yesterday;
+  // 종료일까지 포함 (오늘도 포함)
+  const effectiveEndDate = endDate;
   const days = effectiveEndDate.diff(startDate, "day") + 1;
 
   console.log("Calculation Debug:", {
@@ -69,28 +71,31 @@ router.get("/", async (req, res) => {
     allDates.map((d) => dayjs(d).format("YYYY-MM-DD"))
   );
 
+  // excuse가 'payed'인 레코드만 가져오기
   const records = await prisma.dailySubmission.findMany({
     where: {
       date: { in: allDates },
+      excuse: "payed",
     },
     orderBy: {
       date: "asc",
     },
   });
 
-  // 사용자별로 중복 없이 날짜 카운트
-  const uniqueDatesPerUser: Record<string, Set<string>> = {};
+  // 사용자별로 중복 없이 excuse가 'payed'인 날짜 카운트
+  const payedDatesPerUser: Record<string, Set<string>> = {};
   for (const { userId, date } of records) {
-    if (!uniqueDatesPerUser[userId]) {
-      uniqueDatesPerUser[userId] = new Set();
+    if (!userId) continue; // userId가 null이면 건너뛰기
+    if (!payedDatesPerUser[userId]) {
+      payedDatesPerUser[userId] = new Set();
     }
-    uniqueDatesPerUser[userId].add(dayjs(date).format("YYYY-MM-DD"));
+    payedDatesPerUser[userId].add(dayjs(date).format("YYYY-MM-DD"));
   }
 
   console.log(
-    "Unique Dates Per User:",
+    "Payed Dates Per User:",
     Object.fromEntries(
-      Object.entries(uniqueDatesPerUser).map(([userId, dates]) => [
+      Object.entries(payedDatesPerUser).map(([userId, dates]) => [
         userId,
         Array.from(dates),
       ])
@@ -98,16 +103,15 @@ router.get("/", async (req, res) => {
   );
 
   const result = USER_LIST.map(({ handle }) => {
-    const userDates = uniqueDatesPerUser[handle]?.size || 0;
+    const payedDates = payedDatesPerUser[handle]?.size || 0;
     console.log("User Stats:", {
       userId: handle,
-      uniqueDates: userDates,
+      payedDates: payedDates,
       totalDays: days,
-      missingCount: days - userDates,
     });
     return {
       userId: handle,
-      missingCount: days - userDates,
+      payedCount: payedDates,
     };
   });
 
@@ -117,6 +121,28 @@ router.get("/", async (req, res) => {
     totalDays: days,
     users: result,
   });
+});
+
+// 마지막 크롤링 시간 조회 API 추가
+router.get("/last-crawl", async (_req, res) => {
+  try {
+    const lastCrawl = await prisma.crawlHistory.findFirst({
+      where: { success: true },
+      orderBy: { endTime: "desc" },
+    });
+
+    if (!lastCrawl) {
+      return res.json({ lastCrawlTime: null });
+    }
+
+    return res.json({
+      lastCrawlTime: lastCrawl.endTime,
+      recordsProcessed: lastCrawl.recordsProcessed,
+    });
+  } catch (error) {
+    console.error("마지막 크롤링 시간 조회 실패:", error);
+    return res.status(500).json({ error: "서버 오류" });
+  }
 });
 
 export default router;
