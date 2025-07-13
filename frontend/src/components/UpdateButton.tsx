@@ -91,7 +91,7 @@ export function UpdateButton({
         disabled={loading}
         className=" text-white h-[32px]"
       >
-        {loading ? "업데이트 중... 1분소요요" : "업데이트"}
+        {loading ? "업데이트 중... 1분소요" : "업데이트"}
       </Button>
       <div className="text-xs text-gray-500 text-center">
         {formatLastCrawlTime(lastCrawlTime)}
