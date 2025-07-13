@@ -1,5 +1,11 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
+import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
+import timezone from "dayjs/plugin/timezone";
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 export interface SubmissionRecord {
   problemId: number;
@@ -46,19 +52,18 @@ export async function parseSubmissions(
     const ts = $row.find("td").eq(8).find("a").attr("data-timestamp");
     let submitTime = "";
     if (ts && /^\d+$/.test(ts)) {
-      const date = new Date(parseInt(ts, 10) * 1000);
-      const year = date.getFullYear();
-      const month = date.getMonth() + 1;
-      const day = date.getDate();
-      const hour = date.getHours();
-      const minute = date.getMinutes();
-      const second = date.getSeconds();
+      // UTC timestamp를 직접 dayjs로 처리하여 KST로 변환
+      const kstTime = dayjs.unix(parseInt(ts, 10)).tz("Asia/Seoul");
 
-      submitTime = `${year}년 ${month}월 ${day}일 ${hour
+      submitTime = `${kstTime.year()}년 ${
+        kstTime.month() + 1
+      }월 ${kstTime.date()}일 ${kstTime
+        .hour()
         .toString()
-        .padStart(2, "0")}:${minute.toString().padStart(2, "0")}:${second
+        .padStart(2, "0")}:${kstTime
+        .minute()
         .toString()
-        .padStart(2, "0")}`;
+        .padStart(2, "0")}:${kstTime.second().toString().padStart(2, "0")}`;
     }
 
     if (!isNaN(problemId) && submitTime) {

@@ -65,7 +65,8 @@ router.get("/crawl", async (_req, res) => {
       // 날짜별로 처리
       for (const [dateKey, daySubmissions] of submissionsByDate) {
         const kstDate = dayjs(dateKey).tz("Asia/Seoul");
-        const dateObj = kstDate.add(9, "hour").toDate();
+        // 9시간 추가 제거 - 이미 KST 기준이므로
+        const dateObj = kstDate.toDate();
         const dayOfWeek = kstDate.day(); // 0=일요일, 6=토요일
         const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
@@ -185,9 +186,7 @@ router.get("/crawl", async (_req, res) => {
       await prisma.crawlHistory.update({
         where: { id: crawlHistoryId },
         data: {
-          endTime: new Date(
-            dayjs().tz("Asia/Seoul").format("YYYY-MM-DD HH:mm:ss.SSS")
-          ),
+          endTime: new Date(),
           success: true,
           recordsProcessed: results.filter((r) => r.action === "RECORDED")
             .length,
@@ -205,9 +204,7 @@ router.get("/crawl", async (_req, res) => {
         await prisma.crawlHistory.update({
           where: { id: crawlHistoryId },
           data: {
-            endTime: new Date(
-              dayjs().tz("Asia/Seoul").format("YYYY-MM-DD HH:mm:ss.SSS")
-            ),
+            endTime: new Date(),
             success: false,
           },
         });

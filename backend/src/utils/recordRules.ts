@@ -18,6 +18,7 @@ export function parseKoreanTimestamp(ts: string): Date {
   }
   const [_all, yy, MM, dd, hh, mi, ss] = m;
 
+  // 명시적으로 KST 시간대로 파싱 (서버 환경 무관)
   return dayjs
     .tz(
       `${yy}-${MM.padStart(2, "0")}-${dd.padStart(2, "0")}T${hh.padStart(
@@ -26,8 +27,7 @@ export function parseKoreanTimestamp(ts: string): Date {
       )}:${mi}:${ss}`,
       "Asia/Seoul"
     )
-    .tz("Asia/Seoul", true)
-    .toDate(); // true를 추가하여 시간대 변환 없이 파싱
+    .toDate();
 }
 /**
  * 주어진 제출 시간과 레벨이
