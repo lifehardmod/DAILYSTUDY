@@ -16,7 +16,7 @@ function getWeekRange(date: Date) {
 }
 
 function formatDate(date: Date) {
-  // 한국 시간대 기준으로 정확한 날짜 포맷팅
+  // 로컬 시간 기준으로 정확한 날짜 포맷팅
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
@@ -47,15 +47,14 @@ function getUserName(handle: string) {
 
 function getRecentWeeks(n: number): { start: Date; end: Date }[] {
   const result = [];
-  // 한국 시간대 기준으로 오늘 날짜 계산
+  // 현재 로컬 시간 사용 (이미 한국 시간대인 경우)
   const today = new Date();
-  const koreaToday = new Date(today.getTime() + 9 * 60 * 60 * 1000); // UTC+9
 
   // 현재 주부터 시작
   for (let i = 0; i < n; i++) {
     // 현재 날짜에서 i주 전의 월요일을 계산
-    const targetDate = new Date(koreaToday);
-    targetDate.setDate(koreaToday.getDate() - i * 7);
+    const targetDate = new Date(today);
+    targetDate.setDate(today.getDate() - i * 7);
 
     const { start, end } = getWeekRange(targetDate);
     result.unshift({ start: new Date(start), end: new Date(end) });

@@ -268,11 +268,12 @@ export function SubmissionStatus() {
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [date, setDate] = useState(() => {
-    // 한국 시간대(UTC+9)를 고려한 날짜 계산
+    // 현재 로컬 시간 기준으로 날짜 문자열 생성
     const now = new Date();
-    const kstOffset = 9 * 60; // 9시간을 분으로 변환
-    const kstTime = new Date(now.getTime() + kstOffset * 60 * 1000);
-    return kstTime.toISOString().split("T")[0];
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   });
 
   const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
@@ -320,10 +321,11 @@ export function SubmissionStatus() {
     const currentDate = new Date(year, month - 1, day);
     const today = new Date();
 
-    // 오늘 날짜와 비교 (시간 제외) - 한국 시간대 고려
-    const kstOffset = 9 * 60; // 9시간을 분으로 변환
-    const kstTime = new Date(today.getTime() + kstOffset * 60 * 1000);
-    const todayStr = kstTime.toISOString().split("T")[0];
+    // 오늘 날짜와 비교 (시간 제외) - 현재 로컬 시간 사용
+    const todayYear = today.getFullYear();
+    const todayMonth = String(today.getMonth() + 1).padStart(2, "0");
+    const todayDay = String(today.getDate()).padStart(2, "0");
+    const todayStr = `${todayYear}-${todayMonth}-${todayDay}`;
 
     if (date < todayStr) {
       currentDate.setDate(currentDate.getDate() + 1);
@@ -336,10 +338,11 @@ export function SubmissionStatus() {
 
   const isToday = () => {
     const today = new Date();
-    // 한국 시간대 고려
-    const kstOffset = 9 * 60; // 9시간을 분으로 변환
-    const kstTime = new Date(today.getTime() + kstOffset * 60 * 1000);
-    const todayStr = kstTime.toISOString().split("T")[0];
+    // 현재 로컬 시간 사용
+    const todayYear = today.getFullYear();
+    const todayMonth = String(today.getMonth() + 1).padStart(2, "0");
+    const todayDay = String(today.getDate()).padStart(2, "0");
+    const todayStr = `${todayYear}-${todayMonth}-${todayDay}`;
     return date === todayStr;
   };
 
