@@ -8,7 +8,6 @@ export const USER_LIST = [
   { name: "김종명", handle: "jump6746" },
   { name: "김용명", handle: "kunzatt2501" },
   { name: "윤이영", handle: "laurayoon" },
-  { name: "오은지", handle: "oeg9176" },
   { name: "이동욱", handle: "origin109" },
   { name: "문종하", handle: "qq3477" },
   { name: "김유정", handle: "t0mat0" },
