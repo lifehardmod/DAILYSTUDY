@@ -46,15 +46,30 @@ router.get("/crawl", async (_req, res) => {
     const todayDayOfWeek = dayjs(today).day();
     const isWeekendToday = todayDayOfWeek === 0 || todayDayOfWeek === 6;
 
-    // 오늘 KST 기준 23:59:59.999
-    const todayEnd = dayjs().tz("Asia/Seoul").endOf("day").toDate();
+    const kstTodayStart = dayjs()
+      .tz("Asia/Seoul")
+      .startOf("day")
+      .utc()
+      .toDate();
+    const kstTodayEnd = dayjs().tz("Asia/Seoul").endOf("day").utc().toDate();
 
     for (const { handle, etc } of USER_LIST) {
       // 오늘 기록이 있는지 확인
       const existingToday = await prisma.dailySubmission.findMany({
-        where: { userId: handle, date: { gte: today, lte: todayEnd } },
+        where: {
+          userId: handle,
+          date: { gte: kstTodayStart, lte: kstTodayEnd },
+        },
       });
-      console.log("오늘로깅", existingToday, etc, isWeekendToday);
+      console.log(
+        "오늘로깅",
+        existingToday,
+        etc,
+        isWeekendToday,
+        "오늘은",
+        kstTodayStart,
+        kstTodayEnd
+      );
 
       if (
         existingToday.length === 0 &&
