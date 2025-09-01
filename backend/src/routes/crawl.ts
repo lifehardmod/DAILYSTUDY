@@ -12,6 +12,7 @@ import {
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import { log } from "console";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
@@ -44,13 +45,17 @@ router.get("/crawl", async (_req, res) => {
     const today = dayjs().tz("Asia/Seoul").startOf("day").toDate();
     const todayDayOfWeek = dayjs(today).day();
     const isWeekendToday = todayDayOfWeek === 0 || todayDayOfWeek === 6;
-    const todayStr = dayjs().tz("Asia/Seoul").format("YYYY-MM-DD");
+
+    // 오늘 KST 기준 23:59:59.999
+    const todayEnd = dayjs().tz("Asia/Seoul").endOf("day").toDate();
 
     for (const { handle, etc } of USER_LIST) {
       // 오늘 기록이 있는지 확인
       const existingToday = await prisma.dailySubmission.findMany({
-        where: { userId: handle, date: todayStr },
+        where: { userId: handle, date: { gte: today, lte: todayEnd } },
       });
+      console.log("오늘로깅", existingToday, etc, isWeekendToday);
+
       if (
         existingToday.length === 0 &&
         etc === "exceptional" &&
