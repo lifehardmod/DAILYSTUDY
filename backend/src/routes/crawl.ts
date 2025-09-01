@@ -24,25 +24,61 @@ router.get("/crawl", async (_req, res) => {
     action: "SKIPPED" | "RECORDED";
   }[] = [];
 
+  // 크롤링 시작 시간 (한국 시간)
   const startTime = new Date(
     dayjs().tz("Asia/Seoul").format("YYYY-MM-DD HH:mm:ss.SSS") + "+09:00"
   );
   let crawlHistoryId: string | null = null;
 
   try {
+    // 크롤링 히스토리 시작 기록
     const crawlHistory = await prisma.crawlHistory.create({
       data: {
         startTime,
-        endTime: startTime,
+        endTime: startTime, // 임시
         success: false,
       },
     });
     crawlHistoryId = crawlHistory.id;
 
-    for (const { handle } of USER_LIST) {
-      const submissions = await parseSubmissions(handle);
+    const today = dayjs().tz("Asia/Seoul").startOf("day").toDate();
+    const todayDayOfWeek = dayjs(today).day();
+    const isWeekendToday = todayDayOfWeek === 0 || todayDayOfWeek === 6;
 
-      // 제출 시간 정렬
+    for (const { handle, etc } of USER_LIST) {
+      // 오늘 기록이 있는지 확인
+      const existingToday = await prisma.dailySubmission.findMany({
+        where: { userId: handle, date: today },
+      });
+
+      if (
+        existingToday.length === 0 &&
+        etc === "exceptional" &&
+        !isWeekendToday
+      ) {
+        // 오늘 제출 기록 없고, exceptional 평일 → excuse IMAGE 생성
+        const excuseRecord = await prisma.dailySubmission.create({
+          data: {
+            userId: handle,
+            date: today,
+            status: "IMAGE",
+            excuse: "기타 사유",
+            submitTime: dayjs().format("YYYY년 M월 D일 HH:mm:ss"),
+          },
+        });
+
+        results.push({
+          handle,
+          problemId: -1,
+          action: "RECORDED",
+        });
+
+        console.log(`[EXCEPTIONAL] ${handle}: excuse IMAGE 생성`, excuseRecord);
+        continue; // 오늘 처리 끝, submissions 안 봄
+      }
+
+      // === submissions 크롤링 & 기존 로직 ===
+      const submissions = await parseSubmissions(handle);
       submissions.sort((a, b) => {
         const aTime = parseKoreanTimestamp(a.submitTime).getTime();
         const bTime = parseKoreanTimestamp(b.submitTime).getTime();
@@ -55,13 +91,11 @@ router.get("/crawl", async (_req, res) => {
         const fullDate = parseKoreanTimestamp(submission.submitTime);
         const kstDate = dayjs(fullDate).tz("Asia/Seoul").startOf("day");
         const dateKey = kstDate.format("YYYY-MM-DD");
-
-        if (!submissionsByDate.has(dateKey)) {
-          submissionsByDate.set(dateKey, []);
-        }
+        if (!submissionsByDate.has(dateKey)) submissionsByDate.set(dateKey, []);
         submissionsByDate.get(dateKey)!.push(submission);
       }
 
+      // 날짜별 처리
       for (const [dateKey, daySubmissions] of submissionsByDate) {
         const kstDate = dayjs(dateKey).tz("Asia/Seoul");
         const dateObj = kstDate.toDate();
@@ -72,33 +106,6 @@ router.get("/crawl", async (_req, res) => {
           where: { userId: handle, date: dateObj },
         });
 
-        const userInfo = USER_LIST.find((user) => user.handle === handle);
-
-        // 1. exceptional 처리 (주말 제외)
-        if (userInfo?.etc === "exceptional" && !isWeekend) {
-          if (existingRecords.length === 0) {
-            await prisma.dailySubmission.create({
-              data: {
-                userId: handle,
-                date: dateObj,
-                status: "IMAGE",
-                excuse: "기타 사유",
-                submitTime: dayjs().format("YYYY년 M월 D일 HH:mm:ss"),
-              },
-            });
-          }
-
-          for (const submission of daySubmissions) {
-            results.push({
-              handle,
-              problemId: submission.problemId,
-              action: "SKIPPED",
-            });
-          }
-          continue; // exceptional 로직 끝
-        }
-
-        // 2. 이미 PASS/IMAGE 처리된 문제 제외
         const existingPassOrImage = new Set(
           existingRecords
             .filter(
@@ -107,6 +114,7 @@ router.get("/crawl", async (_req, res) => {
             )
             .map((r) => r.problemId!)
         );
+
         const newSubmissions = daySubmissions.filter(
           (s) => !existingPassOrImage.has(s.problemId)
         );
@@ -122,7 +130,7 @@ router.get("/crawl", async (_req, res) => {
           continue;
         }
 
-        // 3. 주말 처리
+        // 주말 특별 처리
         if (isWeekend) {
           const submissionsWithMeta = await Promise.all(
             newSubmissions.map(async (submission) => {
@@ -139,7 +147,6 @@ router.get("/crawl", async (_req, res) => {
           if (goldOrAbove.length >= 1 || silverOrAbove.length >= 2) {
             for (const submission of submissionsWithMeta) {
               const tier = levelToTier(submission.level);
-
               await prisma.dailySubmission.create({
                 data: {
                   userId: handle,
@@ -152,7 +159,6 @@ router.get("/crawl", async (_req, res) => {
                   tier,
                 },
               });
-
               results.push({
                 handle,
                 problemId: submission.problemId,
@@ -163,7 +169,7 @@ router.get("/crawl", async (_req, res) => {
           }
         }
 
-        // 4. 일반 제출 처리
+        // 개별 제출 처리
         for (const { problemId, submitTime } of newSubmissions) {
           const { titleKo, level } = await fetchProblemMeta(problemId);
 
@@ -173,7 +179,6 @@ router.get("/crawl", async (_req, res) => {
           }
 
           const tier = levelToTier(level);
-
           await prisma.dailySubmission.create({
             data: {
               userId: handle,
@@ -192,7 +197,7 @@ router.get("/crawl", async (_req, res) => {
       }
     }
 
-    // 히스토리 업데이트
+    // 크롤링 성공 시 히스토리 업데이트
     if (crawlHistoryId) {
       await prisma.crawlHistory.update({
         where: { id: crawlHistoryId },
@@ -208,21 +213,16 @@ router.get("/crawl", async (_req, res) => {
     return res.json({ results });
   } catch (e) {
     console.error(e);
-
     if (crawlHistoryId) {
       try {
         await prisma.crawlHistory.update({
           where: { id: crawlHistoryId },
-          data: {
-            endTime: new Date(),
-            success: false,
-          },
+          data: { endTime: new Date(), success: false },
         });
       } catch (historyError) {
         console.error("히스토리 업데이트 실패:", historyError);
       }
     }
-
     return res.status(500).json({ error: (e as Error).message });
   }
 });
