@@ -46,8 +46,16 @@ router.get("/crawl", async (_req, res) => {
     const todayDayOfWeek = dayjs(today).day();
     const isWeekendToday = todayDayOfWeek === 0 || todayDayOfWeek === 6;
 
-    const kstTodayStart = dayjs().tz("Asia/Seoul").startOf("day").toDate();
-    const kstTodayEnd = dayjs().tz("Asia/Seoul").endOf("day").toDate();
+    const kstTodayStart = dayjs()
+      .tz("Asia/Seoul")
+      .startOf("day")
+      .add(9, "hour")
+      .toDate();
+    const kstTodayEnd = dayjs()
+      .tz("Asia/Seoul")
+      .endOf("day")
+      .add(9, "hour")
+      .toDate();
 
     for (const { handle, etc } of USER_LIST) {
       // 오늘 기록이 있는지 확인
