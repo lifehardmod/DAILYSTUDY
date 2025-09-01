@@ -41,74 +41,74 @@ router.get("/crawl", async (_req, res) => {
     });
     crawlHistoryId = crawlHistory.id;
 
-    const kstTodayStart = dayjs()
-      .tz("Asia/Seoul")
-      .startOf("day")
-      .add(9, "hour")
-      .toDate();
+    // const kstTodayStart = dayjs()
+    //   .tz("Asia/Seoul")
+    //   .startOf("day")
+    //   .add(9, "hour")
+    //   .toDate();
 
-    const today = dayjs().tz("Asia/Seoul").startOf("day").add(9, "hour");
+    // const today = dayjs()..add(9, "hour");
 
-    const kstTodayEnd = dayjs()
-      .tz("Asia/Seoul")
-      .endOf("day")
-      .add(9, "hour")
-      .toDate();
+    // const kstTodayEnd = dayjs()
+    //   .tz("Asia/Seoul")
+    //   .endOf("day")
+    //   .add(9, "hour")
+    //   .toDate();
 
-    const kstDate = dayjs(kstTodayStart)
-      .tz("Asia/Seoul")
-      .add(1, "hour")
-      .startOf("day")
-      .toDate();
+    // const kstDate = dayjs(kstTodayStart)
+    //   .tz("Asia/Seoul")
+    //   .add(1, "hour")
+    //   .startOf("day")
+    //   .toDate();
 
-    const todayDayOfWeek = dayjs(today).day();
-    const isWeekendToday = todayDayOfWeek === 0 || todayDayOfWeek === 6;
+    // const todayDayOfWeek = dayjs(today).day();
+    // const isWeekendToday = todayDayOfWeek === 0 || todayDayOfWeek === 6;
 
-    for (const { handle, etc } of USER_LIST) {
-      // 오늘 기록이 있는지 확인
-      const existingToday = await prisma.dailySubmission.findMany({
-        where: {
-          userId: handle,
-          date: { gte: kstTodayStart, lte: kstTodayEnd },
-        },
-      });
-      console.log(
-        "오늘로깅",
-        existingToday,
-        etc,
-        isWeekendToday,
-        "오늘은",
-        kstTodayStart,
-        kstTodayEnd
-      );
+    // for (const { handle, etc } of USER_LIST) {
+    //   // 오늘 기록이 있는지 확인
+    //   const existingToday = await prisma.dailySubmission.findMany({
+    //     where: {
+    //       userId: handle,
+    //       date: { gte: kstTodayStart, lte: kstTodayEnd },
+    //     },
+    //   });
+    //   console.log(
+    //     "오늘로깅",
+    //     existingToday,
+    //     etc,
+    //     isWeekendToday,
+    //     "오늘은",
+    //     kstTodayStart,
+    //     kstTodayEnd
+    //   );
 
-      if (
-        existingToday.length === 0 &&
-        etc === "exceptional" &&
-        !isWeekendToday
-      ) {
-        // 오늘 제출 기록 없고, exceptional 평일 → excuse IMAGE 생성
-        const excuseRecord = await prisma.dailySubmission.create({
-          data: {
-            userId: handle,
-            date: kstDate,
-            status: "IMAGE",
-            excuse: "기타 사유",
-            submitTime: dayjs(kstTodayStart)
-              .add(1, "hour")
-              .format("YYYY년 M월 D일 HH:mm:ss"),
-          },
-        });
+    //   if (
+    //     existingToday.length === 0 &&
+    //     etc === "exceptional" &&
+    //     !isWeekendToday
+    //   ) {
+    //     // 오늘 제출 기록 없고, exceptional 평일 → excuse IMAGE 생성
+    //     const excuseRecord = await prisma.dailySubmission.create({
+    //       data: {
+    //         userId: handle,
+    //         date: kstDate,
+    //         status: "IMAGE",
+    //         excuse: "기타 사유",
+    //         submitTime: dayjs(kstTodayStart)
+    //           .add(1, "hour")
+    //           .format("YYYY년 M월 D일 HH:mm:ss"),
+    //       },
+    //     });
 
-        results.push({
-          handle,
-          problemId: -1,
-          action: "RECORDED",
-        });
+    //     results.push({
+    //       handle,
+    //       problemId: -1,
+    //       action: "RECORDED",
+    //     });
 
-        console.log(`[EXCEPTIONAL] ${handle}: excuse IMAGE 생성`, excuseRecord);
-        continue; // 오늘 처리 끝, submissions 안 봄
-      }
+    //     console.log(`[EXCEPTIONAL] ${handle}: excuse IMAGE 생성`, excuseRecord);
+    //     continue; // 오늘 처리 끝, submissions 안 봄
+    //   }
 
       // === submissions 크롤링 & 기존 로직 ===
       const submissions = await parseSubmissions(handle);
