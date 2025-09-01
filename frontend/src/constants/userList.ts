@@ -1,5 +1,4 @@
 export const USER_LIST = [
-  { name: "배성훈", handle: "bsh7931" },
   { name: "김나영", handle: "chuhini" },
   { name: "강수진", handle: "codena_1025" },
   { name: "임채준", handle: "dlacowns21" },
@@ -13,5 +12,5 @@ export const USER_LIST = [
   { name: "김유정", handle: "t0mat0" },
   { name: "서주원", handle: "tjwndnjs7" },
   { name: "지유림", handle: "zyu22" },
-  { name: "박수양", handle: "sktndid1203"},
+  { name: "박수양", handle: "sktndid1203" },
 ];

@@ -104,6 +104,45 @@ router.get("/crawl", async (_req, res) => {
           continue;
         }
 
+        // exceptional 멤버 처리: 주말이 아닐 때 무조건 통과
+        const userInfo = USER_LIST.find((user) => user.handle === handle);
+        if (userInfo?.etc === "exceptional" && !isWeekend) {
+          // 메타 정보 먼저 가져오기
+          const submissionsWithMeta = await Promise.all(
+            newSubmissions.map(async (submission) => {
+              const { titleKo, level } = await fetchProblemMeta(
+                submission.problemId
+              );
+              return { ...submission, titleKo, level };
+            })
+          );
+
+          // 모든 문제를 PASS로 처리
+          for (const submission of submissionsWithMeta) {
+            const tier = levelToTier(submission.level);
+
+            await prisma.dailySubmission.create({
+              data: {
+                userId: handle,
+                date: dateObj,
+                status: "PASS",
+                submitTime: submission.submitTime,
+                problemId: submission.problemId,
+                titleKo: submission.titleKo,
+                level: submission.level,
+                tier,
+              },
+            });
+
+            results.push({
+              handle,
+              problemId: submission.problemId,
+              action: "RECORDED",
+            });
+          }
+          continue;
+        }
+
         // 주말 특별 처리: 골드 1개 또는 실버 이상 2개 확인
         if (isWeekend) {
           // 메타 정보 먼저 가져오기
