@@ -12,5 +12,4 @@ export const USER_LIST = [
   { name: "김유정", handle: "t0mat0" },
   { name: "서주원", handle: "tjwndnjs7" },
   { name: "지유림", handle: "zyu22" },
-  { name: "박수양", handle: "sktndid1203" },
 ];
