@@ -106,7 +106,16 @@ router.get("/crawl", async (_req, res) => {
 
         // exceptional 멤버 처리: 주말이 아닐 때 기타사유로 excuse 생성
         const userInfo = USER_LIST.find((user) => user.handle === handle);
+        console.log(
+          `[EXCEPTIONAL DEBUG] ${handle}: userInfo=`,
+          userInfo,
+          `isWeekend=`,
+          isWeekend
+        );
+
         if (userInfo?.etc === "exceptional" && !isWeekend) {
+          console.log(`[EXCEPTIONAL DEBUG] ${handle}: exceptional 조건 만족!`);
+
           // 이미 DB에 기록된 문제들 확인
           const existingRecords = await prisma.dailySubmission.findMany({
             where: {
@@ -115,8 +124,16 @@ router.get("/crawl", async (_req, res) => {
             },
           });
 
+          console.log(
+            `[EXCEPTIONAL DEBUG] ${handle}: existingRecords.length=`,
+            existingRecords.length
+          );
+
           // 해당 날짜에 이미 PASS/IMAGE 기록이 있으면 스킵
           if (existingRecords.length > 0) {
+            console.log(
+              `[EXCEPTIONAL DEBUG] ${handle}: 이미 기록이 있어서 스킵`
+            );
             for (const submission of daySubmissions) {
               results.push({
                 handle,
@@ -127,26 +144,39 @@ router.get("/crawl", async (_req, res) => {
             continue;
           }
 
-          // 기타사유로 excuse 레코드 생성
-          await prisma.dailySubmission.create({
-            data: {
-              userId: handle,
-              date: dateObj,
-              status: "IMAGE",
-              excuse: "기타사유",
-              submitTime: dayjs().format("YYYY년 M월 D일 HH:mm:ss"),
-            },
-          });
+          console.log(`[EXCEPTIONAL DEBUG] ${handle}: excuse 레코드 생성 시작`);
 
-          // 모든 제출을 SKIPPED로 처리 (excuse로 대체)
-          for (const submission of daySubmissions) {
-            results.push({
-              handle,
-              problemId: submission.problemId,
-              action: "SKIPPED",
+          // 기타사유로 excuse 레코드 생성
+          try {
+            const excuseRecord = await prisma.dailySubmission.create({
+              data: {
+                userId: handle,
+                date: dateObj,
+                status: "IMAGE",
+                excuse: "기타 사유",
+                submitTime: dayjs().format("YYYY년 M월 D일 HH:mm:ss"),
+              },
             });
+            console.log(
+              `[EXCEPTIONAL DEBUG] ${handle}: excuse 레코드 생성 성공!`,
+              excuseRecord
+            );
+
+            // 모든 제출을 SKIPPED로 처리 (excuse로 대체)
+            for (const submission of daySubmissions) {
+              results.push({
+                handle,
+                problemId: submission.problemId,
+                action: "SKIPPED",
+              });
+            }
+            continue;
+          } catch (error) {
+            console.error(
+              `[EXCEPTIONAL DEBUG] ${handle}: excuse 레코드 생성 실패!`,
+              error
+            );
           }
-          continue;
         }
 
         // 주말 특별 처리: 골드 1개 또는 실버 이상 2개 확인
