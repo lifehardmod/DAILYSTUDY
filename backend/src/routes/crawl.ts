@@ -87,7 +87,9 @@ router.get("/crawl", async (_req, res) => {
             date: today,
             status: "IMAGE",
             excuse: "기타 사유",
-            submitTime: dayjs().format("YYYY년 M월 D일 HH:mm:ss"),
+            submitTime: dayjs(kstTodayStart)
+              .add(1, "hour")
+              .format("YYYY년 M월 D일 HH:mm:ss"),
           },
         });
 
