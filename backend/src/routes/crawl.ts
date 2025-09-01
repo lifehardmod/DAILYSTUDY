@@ -14,6 +14,7 @@ import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
 dayjs.extend(utc);
 dayjs.extend(timezone);
+
 const router = express.Router();
 
 router.get("/crawl", async (_req, res) => {
@@ -23,33 +24,32 @@ router.get("/crawl", async (_req, res) => {
     action: "SKIPPED" | "RECORDED";
   }[] = [];
 
-  // 크롤링 시작 시간 기록 (한국 시간)
   const startTime = new Date(
     dayjs().tz("Asia/Seoul").format("YYYY-MM-DD HH:mm:ss.SSS") + "+09:00"
   );
   let crawlHistoryId: string | null = null;
 
   try {
-    // 크롤링 히스토리 시작 기록
     const crawlHistory = await prisma.crawlHistory.create({
       data: {
         startTime,
-        endTime: startTime, // 임시로 같은 시간으로 설정
-        success: false, // 일단 false로 설정
+        endTime: startTime,
+        success: false,
       },
     });
     crawlHistoryId = crawlHistory.id;
+
     for (const { handle } of USER_LIST) {
-      // 유저별로 오늘자 RECORD(=PASS/IMAGE) 이미 DB에 있는 key
       const submissions = await parseSubmissions(handle);
-      // 제출 시간 오름차순 정렬
+
+      // 제출 시간 정렬
       submissions.sort((a, b) => {
         const aTime = parseKoreanTimestamp(a.submitTime).getTime();
         const bTime = parseKoreanTimestamp(b.submitTime).getTime();
         return aTime - bTime;
       });
 
-      // 날짜별로 제출 그룹화
+      // 날짜별 그룹화
       const submissionsByDate = new Map<string, typeof submissions>();
       for (const submission of submissions) {
         const fullDate = parseKoreanTimestamp(submission.submitTime);
@@ -62,22 +62,43 @@ router.get("/crawl", async (_req, res) => {
         submissionsByDate.get(dateKey)!.push(submission);
       }
 
-      // 날짜별로 처리
       for (const [dateKey, daySubmissions] of submissionsByDate) {
         const kstDate = dayjs(dateKey).tz("Asia/Seoul");
-        // 9시간 추가 제거 - 이미 KST 기준이므로
         const dateObj = kstDate.toDate();
-        const dayOfWeek = kstDate.day(); // 0=일요일, 6=토요일
+        const dayOfWeek = kstDate.day();
         const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
-        // 이미 DB에 기록된 문제들 확인
         const existingRecords = await prisma.dailySubmission.findMany({
-          where: {
-            userId: handle,
-            date: dateObj,
-          },
+          where: { userId: handle, date: dateObj },
         });
 
+        const userInfo = USER_LIST.find((user) => user.handle === handle);
+
+        // 1. exceptional 처리 (주말 제외)
+        if (userInfo?.etc === "exceptional" && !isWeekend) {
+          if (existingRecords.length === 0) {
+            await prisma.dailySubmission.create({
+              data: {
+                userId: handle,
+                date: dateObj,
+                status: "IMAGE",
+                excuse: "기타 사유",
+                submitTime: dayjs().format("YYYY년 M월 D일 HH:mm:ss"),
+              },
+            });
+          }
+
+          for (const submission of daySubmissions) {
+            results.push({
+              handle,
+              problemId: submission.problemId,
+              action: "SKIPPED",
+            });
+          }
+          continue; // exceptional 로직 끝
+        }
+
+        // 2. 이미 PASS/IMAGE 처리된 문제 제외
         const existingPassOrImage = new Set(
           existingRecords
             .filter(
@@ -86,14 +107,11 @@ router.get("/crawl", async (_req, res) => {
             )
             .map((r) => r.problemId!)
         );
-
-        // 새로 처리할 제출들 (이미 PASS/IMAGE로 기록된 것 제외)
         const newSubmissions = daySubmissions.filter(
           (s) => !existingPassOrImage.has(s.problemId)
         );
 
         if (newSubmissions.length === 0) {
-          // 모든 제출이 이미 처리됨
           for (const submission of daySubmissions) {
             results.push({
               handle,
@@ -104,84 +122,8 @@ router.get("/crawl", async (_req, res) => {
           continue;
         }
 
-        // exceptional 멤버 처리: 주말이 아닐 때 기타사유로 excuse 생성
-        const userInfo = USER_LIST.find((user) => user.handle === handle);
-        console.log(
-          `[EXCEPTIONAL DEBUG] ${handle}: userInfo=`,
-          userInfo,
-          `isWeekend=`,
-          isWeekend
-        );
-
-        if (userInfo?.etc === "exceptional" && !isWeekend) {
-          console.log(`[EXCEPTIONAL DEBUG] ${handle}: exceptional 조건 만족!`);
-
-          // 이미 DB에 기록된 문제들 확인
-          const existingRecords = await prisma.dailySubmission.findMany({
-            where: {
-              userId: handle,
-              date: dateObj,
-            },
-          });
-
-          console.log(
-            `[EXCEPTIONAL DEBUG] ${handle}: existingRecords.length=`,
-            existingRecords.length
-          );
-
-          // 해당 날짜에 이미 PASS/IMAGE 기록이 있으면 스킵
-          if (existingRecords.length > 0) {
-            console.log(
-              `[EXCEPTIONAL DEBUG] ${handle}: 이미 기록이 있어서 스킵`
-            );
-            for (const submission of daySubmissions) {
-              results.push({
-                handle,
-                problemId: submission.problemId,
-                action: "SKIPPED",
-              });
-            }
-            continue;
-          }
-
-          console.log(`[EXCEPTIONAL DEBUG] ${handle}: excuse 레코드 생성 시작`);
-
-          // 기타사유로 excuse 레코드 생성
-          try {
-            const excuseRecord = await prisma.dailySubmission.create({
-              data: {
-                userId: handle,
-                date: dateObj,
-                status: "IMAGE",
-                excuse: "기타 사유",
-                submitTime: dayjs().format("YYYY년 M월 D일 HH:mm:ss"),
-              },
-            });
-            console.log(
-              `[EXCEPTIONAL DEBUG] ${handle}: excuse 레코드 생성 성공!`,
-              excuseRecord
-            );
-
-            // 모든 제출을 SKIPPED로 처리 (excuse로 대체)
-            for (const submission of daySubmissions) {
-              results.push({
-                handle,
-                problemId: submission.problemId,
-                action: "SKIPPED",
-              });
-            }
-            continue;
-          } catch (error) {
-            console.error(
-              `[EXCEPTIONAL DEBUG] ${handle}: excuse 레코드 생성 실패!`,
-              error
-            );
-          }
-        }
-
-        // 주말 특별 처리: 골드 1개 또는 실버 이상 2개 확인
+        // 3. 주말 처리
         if (isWeekend) {
-          // 메타 정보 먼저 가져오기
           const submissionsWithMeta = await Promise.all(
             newSubmissions.map(async (submission) => {
               const { titleKo, level } = await fetchProblemMeta(
@@ -191,12 +133,9 @@ router.get("/crawl", async (_req, res) => {
             })
           );
 
-          // 골드 이상 (level >= 11) 문제 개수 확인
           const goldOrAbove = submissionsWithMeta.filter((s) => s.level >= 11);
-          // 실버 이상 (level >= 6) 문제 개수 확인
           const silverOrAbove = submissionsWithMeta.filter((s) => s.level >= 6);
 
-          // 골드 이상 1개가 있거나, 실버 이상 2개가 있으면 모든 문제를 PASS로 처리
           if (goldOrAbove.length >= 1 || silverOrAbove.length >= 2) {
             for (const submission of submissionsWithMeta) {
               const tier = levelToTier(submission.level);
@@ -224,20 +163,17 @@ router.get("/crawl", async (_req, res) => {
           }
         }
 
-        // 기존 로직: 개별 제출 처리
+        // 4. 일반 제출 처리
         for (const { problemId, submitTime } of newSubmissions) {
           const { titleKo, level } = await fetchProblemMeta(problemId);
 
-          // 요일·레벨 검사
           if (!isRecordable(submitTime, level)) {
             results.push({ handle, problemId, action: "SKIPPED" });
             continue;
           }
 
-          // Tier 계산
           const tier = levelToTier(level);
 
-          // DB에 CREATE (PASS)
           await prisma.dailySubmission.create({
             data: {
               userId: handle,
@@ -256,7 +192,7 @@ router.get("/crawl", async (_req, res) => {
       }
     }
 
-    // 크롤링 성공 시 히스토리 업데이트
+    // 히스토리 업데이트
     if (crawlHistoryId) {
       await prisma.crawlHistory.update({
         where: { id: crawlHistoryId },
@@ -273,7 +209,6 @@ router.get("/crawl", async (_req, res) => {
   } catch (e) {
     console.error(e);
 
-    // 크롤링 실패 시 히스토리 업데이트
     if (crawlHistoryId) {
       try {
         await prisma.crawlHistory.update({
