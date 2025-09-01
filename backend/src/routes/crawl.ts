@@ -104,40 +104,46 @@ router.get("/crawl", async (_req, res) => {
           continue;
         }
 
-        // exceptional 멤버 처리: 주말이 아닐 때 무조건 통과
+        // exceptional 멤버 처리: 주말이 아닐 때 기타사유로 excuse 생성
         const userInfo = USER_LIST.find((user) => user.handle === handle);
         if (userInfo?.etc === "exceptional" && !isWeekend) {
-          // 메타 정보 먼저 가져오기
-          const submissionsWithMeta = await Promise.all(
-            newSubmissions.map(async (submission) => {
-              const { titleKo, level } = await fetchProblemMeta(
-                submission.problemId
-              );
-              return { ...submission, titleKo, level };
-            })
-          );
+          // 이미 DB에 기록된 문제들 확인
+          const existingRecords = await prisma.dailySubmission.findMany({
+            where: {
+              userId: handle,
+              date: dateObj,
+            },
+          });
 
-          // 모든 문제를 PASS로 처리
-          for (const submission of submissionsWithMeta) {
-            const tier = levelToTier(submission.level);
-
-            await prisma.dailySubmission.create({
-              data: {
-                userId: handle,
-                date: dateObj,
-                status: "PASS",
-                submitTime: submission.submitTime,
+          // 해당 날짜에 이미 PASS/IMAGE 기록이 있으면 스킵
+          if (existingRecords.length > 0) {
+            for (const submission of daySubmissions) {
+              results.push({
+                handle,
                 problemId: submission.problemId,
-                titleKo: submission.titleKo,
-                level: submission.level,
-                tier,
-              },
-            });
+                action: "SKIPPED",
+              });
+            }
+            continue;
+          }
 
+          // 기타사유로 excuse 레코드 생성
+          await prisma.dailySubmission.create({
+            data: {
+              userId: handle,
+              date: dateObj,
+              status: "IMAGE",
+              excuse: "기타사유",
+              submitTime: dayjs().format("YYYY년 M월 D일 HH:mm:ss"),
+            },
+          });
+
+          // 모든 제출을 SKIPPED로 처리 (excuse로 대체)
+          for (const submission of daySubmissions) {
             results.push({
               handle,
               problemId: submission.problemId,
-              action: "RECORDED",
+              action: "SKIPPED",
             });
           }
           continue;
