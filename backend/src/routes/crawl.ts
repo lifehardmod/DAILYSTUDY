@@ -57,6 +57,12 @@ router.get("/crawl", async (_req, res) => {
       .add(9, "hour")
       .toDate();
 
+    const kstDate = dayjs(kstTodayStart)
+      .tz("Asia/Seoul")
+      .add(1, "hour")
+      .startOf("day")
+      .toDate();
+
     for (const { handle, etc } of USER_LIST) {
       // 오늘 기록이 있는지 확인
       const existingToday = await prisma.dailySubmission.findMany({
@@ -84,7 +90,7 @@ router.get("/crawl", async (_req, res) => {
         const excuseRecord = await prisma.dailySubmission.create({
           data: {
             userId: handle,
-            date: today,
+            date: kstDate,
             status: "IMAGE",
             excuse: "기타 사유",
             submitTime: dayjs(kstTodayStart)
