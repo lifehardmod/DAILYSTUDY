@@ -12,7 +12,6 @@ import {
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import { log } from "console";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
@@ -42,15 +41,14 @@ router.get("/crawl", async (_req, res) => {
     });
     crawlHistoryId = crawlHistory.id;
 
-    const today = dayjs().tz("Asia/Seoul").startOf("day").toDate();
-    const todayDayOfWeek = dayjs(today).day();
-    const isWeekendToday = todayDayOfWeek === 0 || todayDayOfWeek === 6;
-
     const kstTodayStart = dayjs()
       .tz("Asia/Seoul")
       .startOf("day")
       .add(9, "hour")
       .toDate();
+
+    const today = dayjs().tz("Asia/Seoul").startOf("day").add(9, "hour");
+
     const kstTodayEnd = dayjs()
       .tz("Asia/Seoul")
       .endOf("day")
@@ -62,6 +60,9 @@ router.get("/crawl", async (_req, res) => {
       .add(1, "hour")
       .startOf("day")
       .toDate();
+
+    const todayDayOfWeek = dayjs(today).day();
+    const isWeekendToday = todayDayOfWeek === 0 || todayDayOfWeek === 6;
 
     for (const { handle, etc } of USER_LIST) {
       // 오늘 기록이 있는지 확인
