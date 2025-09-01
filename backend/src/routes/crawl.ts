@@ -44,21 +44,13 @@ router.get("/crawl", async (_req, res) => {
     const today = dayjs().tz("Asia/Seoul").startOf("day").toDate();
     const todayDayOfWeek = dayjs(today).day();
     const isWeekendToday = todayDayOfWeek === 0 || todayDayOfWeek === 6;
-    const startOfDay = dayjs().tz("Asia/Seoul").startOf("day").toDate();
-    const endOfDay = dayjs().tz("Asia/Seoul").endOf("day").toDate();
+    const todayStr = dayjs().tz("Asia/Seoul").format("YYYY-MM-DD");
 
     for (const { handle, etc } of USER_LIST) {
       // 오늘 기록이 있는지 확인
       const existingToday = await prisma.dailySubmission.findMany({
-        where: {
-          userId: handle,
-          date: {
-            gte: startOfDay,
-            lte: endOfDay,
-          },
-        },
+        where: { userId: handle, date: todayStr },
       });
-
       if (
         existingToday.length === 0 &&
         etc === "exceptional" &&
