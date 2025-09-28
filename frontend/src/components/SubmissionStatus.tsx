@@ -30,12 +30,6 @@ import { MissedAlert } from "./MissedAlert";
 import { UpdateButton } from "./UpdateButton";
 import { YesterdayMissedAlert } from "./YesterdayMissedAlert";
 
-// handle(아이디)로 name(이름) 찾는 함수 추가
-function getUserName(handle: string) {
-  const user = USER_LIST.find((u) => u.handle === handle);
-  return user ? user.name : handle;
-}
-
 // 사유 라벨 목록
 const EXCUSE_LABELS = [
   "다른 사이트를 이용했어요",
@@ -51,7 +45,7 @@ interface ExcuseModalProps {
   onSubmit: (excuse: { excuse: string }) => void;
 }
 
-function ExcuseModal({ isOpen, onClose, onSubmit }: ExcuseModalProps) {
+const ExcuseModal = ({ isOpen, onClose, onSubmit }: ExcuseModalProps) => {
   const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
   const [otherDetail, setOtherDetail] = useState("");
   const [showKakaoCheck, setShowKakaoCheck] = useState(false);
@@ -188,7 +182,7 @@ function ExcuseModal({ isOpen, onClose, onSubmit }: ExcuseModalProps) {
       </DialogContent>
     </Dialog>
   );
-}
+};
 
 // 규칙 모달 컴포넌트 추가
 interface RulesModalProps {
