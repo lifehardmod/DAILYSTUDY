@@ -1,3 +1,10 @@
+export interface APIResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+  error?: string;
+}
+
 export interface Problem {
   problemId: number;
   titleKo: string;
@@ -16,6 +23,14 @@ export interface UserSubmission {
 export interface SubmissionResponse {
   date: string;
   users: UserSubmission[];
+}
+
+export interface ExcuseResponse {
+  userId: string;
+  date: string;
+  status: SubmissionStatus;
+  excuse: string;
+  submitTime: string;
 }
 
 export type SubmissionStatus = "PASS" | "IMAGE";

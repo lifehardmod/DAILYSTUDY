@@ -3,6 +3,7 @@ import prisma from "../lib/prisma";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import { APIResponse, ExcuseResponse } from "../type/types";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 dayjs.tz.setDefault("Asia/Seoul");
@@ -14,12 +15,22 @@ router.post("/", async (req, res) => {
 
   // 유효성 검사
   if (!userId || !date || !excuse) {
-    return res.status(400).json({ error: "userId, date, excuse는 필수입니다" });
+    const response: APIResponse<null> = {
+      success: false,
+      message: "userId, date, excuse는 필수입니다",
+      data: null,
+    };
+    return res.status(400).json(response);
   }
 
   // 날짜 형식 검증
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    return res.status(400).json({ error: "날짜 형식이 잘못되었습니다" });
+    const response: APIResponse<null> = {
+      success: false,
+      message: "날짜 형식이 잘못되었습니다",
+      data: null,
+    };
+    return res.status(400).json(response);
   }
 
   try {
@@ -32,9 +43,12 @@ router.post("/", async (req, res) => {
     });
 
     if (existing) {
-      return res
-        .status(409)
-        .json({ error: "이미 해당 날짜에 제출 기록이 있습니다" });
+      const response: APIResponse<null> = {
+        success: false,
+        message: "이미 해당 날짜에 제출 기록이 있습니다",
+        data: null,
+      };
+      return res.status(409).json(response);
     }
 
     // 새 레코드 삽입
@@ -48,10 +62,27 @@ router.post("/", async (req, res) => {
       },
     });
 
-    return res.json({ message: "사유가 등록되었습니다", record });
+    const response: APIResponse<ExcuseResponse> = {
+      success: true,
+      message: "사유가 등록되었습니다",
+      data: {
+        userId: record.userId,
+        date: record.date.toISOString().split("T")[0], // Date를 YYYY-MM-DD 형식 문자열로 변환
+        status: record.status,
+        excuse: record.excuse || "",
+        submitTime: record.submitTime || "",
+      },
+    };
+
+    return res.json(response);
   } catch (e) {
     console.error(e);
-    return res.status(500).json({ error: "서버 오류" });
+    const response: APIResponse<null> = {
+      success: false,
+      message: "서버 오류",
+      data: null,
+    };
+    return res.status(500).json(response);
   }
 });
 

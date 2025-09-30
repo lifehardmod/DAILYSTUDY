@@ -1,8 +1,8 @@
 import { CheckCircle, MessageSquare, Clock } from "lucide-react";
 import { UserSubmission } from "../types/submission";
 import { getUserName } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/shared/badge";
+import { Button } from "@/components/shared/button";
 import useModalStore from "@/store/useModalStore";
 
 export interface UserCardProps {
@@ -16,7 +16,7 @@ const UserCard = ({ user, setSelectedUserId }: UserCardProps) => {
   return (
     <div
       key={user.userId}
-      className="bg-white border border-gray-200 rounded-xs hover:shadow-md p-6 flex flex-col gap-4"
+      className="bg-white border border-gray-400 rounded-xs hover:shadow-md p-6 flex flex-col gap-4"
     >
       {/* 상단 이름 및 제출 현황 */}
       <div className="flex items-center justify-between">
@@ -46,7 +46,7 @@ const UserCard = ({ user, setSelectedUserId }: UserCardProps) => {
           )}
         </div>
       </div>
-      {user.status === "PASS" ? (
+      {user.status === "PASS" && (
         <div>
           {user.problems?.[0].excuse ? (
             <div className="flex items-start gap-3">
@@ -86,8 +86,6 @@ const UserCard = ({ user, setSelectedUserId }: UserCardProps) => {
             </ul>
           )}
         </div>
-      ) : (
-        <div>123</div>
       )}
     </div>
   );

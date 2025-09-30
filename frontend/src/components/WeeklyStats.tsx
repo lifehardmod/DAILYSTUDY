@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/shared/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { USER_LIST } from "@/constants/userList";
 
