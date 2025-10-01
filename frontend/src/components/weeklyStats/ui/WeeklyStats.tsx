@@ -19,6 +19,7 @@ const WeeklyStats = () => {
   } = useQuery({
     queryKey: ["weeklyStats", monday, sunday],
     queryFn: () => getWeeklyStats(Dateformat(monday), Dateformat(sunday)),
+    staleTime: 1000 * 60 * 5,
   });
 
   const payedUsers = () => {
