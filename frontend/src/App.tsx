@@ -6,7 +6,7 @@ const queryClient = new QueryClient();
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <main className="mx-auto max-w-[1440px] px-4 pb-20 sm:px-8">
+      <main className="mx-auto max-w-4xl px-4 pb-20 sm:px-8">
         <StudyCheck />
       </main>
     </QueryClientProvider>

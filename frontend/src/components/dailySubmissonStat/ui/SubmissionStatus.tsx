@@ -22,14 +22,13 @@ interface SubmissionStatusProps {
   goToPreviousDay: () => void;
   goToNextDay: () => void;
   lastCrawlTime: string | null;
-  lastCrawlTimeLoading: boolean;
   lastCrawlTimeError: Error | null;
   handleUpdate: () => void;
+  isCrawlUpdatePending: boolean;
 }
 
 const SubmissionStatus = ({
   lastCrawlTime,
-  lastCrawlTimeLoading,
   lastCrawlTimeError,
   handleUpdate,
   failedUsers,
@@ -41,6 +40,7 @@ const SubmissionStatus = ({
   isToday,
   goToPreviousDay,
   goToNextDay,
+  isCrawlUpdatePending,
 }: SubmissionStatusProps) => {
   const isExcuseModalOpen = useModalStore((state) => state.isExcuseModalOpen);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -81,8 +81,8 @@ const SubmissionStatus = ({
         </div>
         <div className="flex justify-end">
           <UpdateButton
+            isCrawlUpdatePending={isCrawlUpdatePending}
             lastCrawlTime={lastCrawlTime || null}
-            lastCrawlTimeLoading={lastCrawlTimeLoading}
             lastCrawlTimeError={lastCrawlTimeError}
             handleUpdate={handleUpdate}
           />

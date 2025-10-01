@@ -12,7 +12,7 @@ export const useSubmitExcuse = () => {
       userId: string;
       excuse: string;
       date: string;
-    }) => SubmitExcuseAPI(userId, excuse, date),
+    }) => SubmitExcuseAPI(userId, date, excuse),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["submissions"] });
     },

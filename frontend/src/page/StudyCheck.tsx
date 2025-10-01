@@ -20,11 +20,7 @@ const StudyCheck = () => {
     useDateNavigator();
   const queryClient = useQueryClient();
 
-  const {
-    data: lastCrawlTime,
-    isLoading: lastCrawlTimeLoading,
-    error: lastCrawlTimeError,
-  } = useQuery({
+  const { data: lastCrawlTime, error: lastCrawlTimeError } = useQuery({
     queryKey: ["lastCrawlTime"],
     queryFn: getLastCrawlTime,
   });
@@ -39,16 +35,18 @@ const StudyCheck = () => {
     staleTime: 1000 * 60 * 5,
   });
 
-  const { mutate: handleUpdate } = useMutation({
-    mutationFn: updateCrawl,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["lastCrawlTime"] });
-      queryClient.invalidateQueries({ queryKey: ["submissions"] });
-    },
-    onError: (error: Error) => {
-      alert(error.message);
-    },
-  });
+  const { mutate: handleUpdate, isPending: isCrawlUpdatePending } = useMutation(
+    {
+      mutationFn: updateCrawl,
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ["lastCrawlTime"] });
+        queryClient.invalidateQueries({ queryKey: ["submissions"] });
+      },
+      onError: (error: Error) => {
+        alert(error.message);
+      },
+    }
+  );
 
   const { passedUsers, failedUsers } = (submissions?.data?.users ?? []).reduce(
     (acc, user) => {
@@ -77,7 +75,6 @@ const StudyCheck = () => {
       </div>
       <SubmissionStatus
         lastCrawlTime={lastCrawlTime?.data?.lastCrawlTime || null}
-        lastCrawlTimeLoading={lastCrawlTimeLoading}
         lastCrawlTimeError={lastCrawlTimeError}
         handleUpdate={handleUpdate}
         failedUsers={failedUsers || []}
@@ -89,6 +86,7 @@ const StudyCheck = () => {
         isToday={isToday}
         goToPreviousDay={goToPreviousDay}
         goToNextDay={goToNextDay}
+        isCrawlUpdatePending={isCrawlUpdatePending}
       />
       <RulesModal isOpen={isRulesModalOpen} />
     </div>
