@@ -14,11 +14,10 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-app.use("/api", crawlRouter);
+app.use("/crawl", crawlRouter);
 app.use("/submissions", submissionsRouter);
 app.use("/excuse", excuseRouter);
 app.use("/stats", statsRouter);
-
 app.get("/", (_, res) => {
   res.send("DailyStudy API is running");
 });

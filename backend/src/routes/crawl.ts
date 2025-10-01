@@ -12,11 +12,12 @@ import {
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import { APIResponse } from "../type/types";
 dayjs.extend(utc);
 dayjs.extend(timezone);
 const router = express.Router();
 
-router.get("/crawl", async (_req, res) => {
+router.get("/", async (_req, res) => {
   const results: {
     handle: string;
     problemId: number;
@@ -214,6 +215,46 @@ router.get("/crawl", async (_req, res) => {
     }
 
     return res.status(500).json({ error: (e as Error).message });
+  }
+});
+
+// 마지막 크롤링 시간 조회 API 추가
+router.get("/last-crawl", async (_req, res) => {
+  try {
+    const lastCrawl = await prisma.crawlHistory.findFirst({
+      where: { success: true },
+      orderBy: { endTime: "desc" },
+    });
+
+    if (!lastCrawl) {
+      const response: APIResponse<{
+        lastCrawlTime: null;
+        recordsProcessed: null;
+      }> = {
+        success: true,
+        message: "크롤링 정보가 없습니다.",
+        data: { lastCrawlTime: null, recordsProcessed: null },
+      };
+
+      return res.json(response);
+    }
+
+    const response: APIResponse<{
+      lastCrawlTime: Date;
+      recordsProcessed: number;
+    }> = {
+      success: true,
+      message: "마지막 크롤링 시간 조회 성공",
+      data: {
+        lastCrawlTime: lastCrawl?.endTime,
+        recordsProcessed: lastCrawl?.recordsProcessed || 0,
+      },
+    };
+
+    return res.json(response);
+  } catch (error) {
+    console.error("마지막 크롤링 시간 조회 실패:", error);
+    return res.status(500).json({ error: "서버 오류" });
   }
 });
 

@@ -5,6 +5,7 @@ import { USER_LIST } from "../constants/users";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import { APIResponse, WeeklyStatsResponse } from "../type/types";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -106,43 +107,27 @@ router.get("/", async (req, res) => {
     const payedDates = payedDatesPerUser[handle]?.size || 0;
     console.log("User Stats:", {
       userId: handle,
-      payedDates: payedDates,
-      totalDays: days,
+      payedCount: payedDates,
     });
+
     return {
       userId: handle,
       payedCount: payedDates,
     };
   });
 
-  return res.json({
-    startDate: startDate.format("YYYY-MM-DD"),
-    endDate: effectiveEndDate.format("YYYY-MM-DD"),
-    totalDays: days,
-    users: result,
-  });
-});
+  const response: APIResponse<WeeklyStatsResponse> = {
+    success: true,
+    message: "납부 현황을 가져왔습니다",
+    data: {
+      startDate: startDate.format("YYYY-MM-DD"),
+      endDate: effectiveEndDate.format("YYYY-MM-DD"),
+      totalDays: days,
+      users: result,
+    },
+  };
 
-// 마지막 크롤링 시간 조회 API 추가
-router.get("/last-crawl", async (_req, res) => {
-  try {
-    const lastCrawl = await prisma.crawlHistory.findFirst({
-      where: { success: true },
-      orderBy: { endTime: "desc" },
-    });
-
-    if (!lastCrawl) {
-      return res.json({ lastCrawlTime: null });
-    }
-
-    return res.json({
-      lastCrawlTime: lastCrawl.endTime,
-      recordsProcessed: lastCrawl.recordsProcessed,
-    });
-  } catch (error) {
-    console.error("마지막 크롤링 시간 조회 실패:", error);
-    return res.status(500).json({ error: "서버 오류" });
-  }
+  return res.json(response);
 });
 
 export default router;

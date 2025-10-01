@@ -34,3 +34,15 @@ export interface ExcuseResponse {
 }
 
 export type SubmissionStatus = "PASS" | "IMAGE";
+
+export interface WeeklyStatsResponse {
+  startDate: string;
+  endDate: string;
+  totalDays: number;
+  users: UserStat[];
+}
+
+export interface UserStat {
+  userId: string;
+  payedCount: number;
+}

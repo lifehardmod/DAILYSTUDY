@@ -4,6 +4,7 @@ import { USER_LIST } from "../constants/users";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import { APIResponse, SubmissionResponse, UserSubmission } from "../type/types";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -53,8 +54,16 @@ router.get("/", async (req, res) => {
         problems,
       };
     });
+    const response: APIResponse<SubmissionResponse> = {
+      success: true,
+      message: "제출 기록을 가져왔습니다",
+      data: {
+        date: dateStr,
+        users: users as UserSubmission[],
+      },
+    };
 
-    res.json({ date: dateStr, users });
+    res.json(response);
   } catch (e) {
     res.status(500).json({ error: (e as Error).message });
   }
