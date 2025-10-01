@@ -1,4 +1,4 @@
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/components/shared";
 import { USER_LIST } from "@/constants/userList";
 import { useState } from "react";
 
@@ -44,7 +44,7 @@ export function MissedAlert({ failedUsers }: MissedAlertProps) {
     <Button
       size="sm"
       onClick={handleCopy}
-      className="bg-red-500 text-white"
+      className="bg-red-500 text-white w-fit"
       disabled={loading}
     >
       미제출자 독촉하기

@@ -1,31 +1,36 @@
-import { Dialog, DialogContent, DialogTitle } from "@radix-ui/react-dialog";
-import { DialogFooter, DialogHeader } from "../../shared/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  DialogFooter,
+  DialogHeader,
+} from "@/components/shared/dialog";
 import { Info } from "lucide-react";
-import { Button } from "../../shared/ui/button";
+import { Button } from "@/components/shared";
+import useModalStore from "@/store/useModalStore";
 
 interface RulesModalProps {
   isOpen: boolean;
-  onClose: () => void;
 }
 
-const RulesModal = ({ isOpen, onClose }: RulesModalProps) => {
+const RulesModal = ({ isOpen }: RulesModalProps) => {
+  const closeRuleModal = useModalStore((state) => state.closeRulesModal);
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={closeRuleModal}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Info className="h-5 w-5" />
-            1일1알고 규칙
+            1일 1스터디 규칙
           </DialogTitle>
         </DialogHeader>
-
         <div className="space-y-4">
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
             <h4 className="font-semibold text-gray-800 mb-3">📚 기본 규칙</h4>
             <ul className="space-y-2 text-sm text-gray-700">
               <li className="flex items-start gap-2">
                 <span className="font-medium">•</span>
-                <span>SQL or 알고리즘 풀기</span>
+                <span>하루 1개 SQL or 알고리즘 등 PS Solve</span>
               </li>
               <li className="flex items-start gap-2">
                 <span className="font-medium">•</span>
@@ -34,8 +39,8 @@ const RulesModal = ({ isOpen, onClose }: RulesModalProps) => {
               <li className="flex items-start gap-2">
                 <span className="font-medium">•</span>
                 <span>
-                  그 외(주말, 공휴일 등) 골드 이상 or 프로그래머스 레벨3 이상
-                  풀기
+                  그 외(주말, 공휴일 등) 골드 이상 (실버 2개 허용) or
+                  프로그래머스 레벨3 이상 풀기
                 </span>
               </li>
             </ul>
@@ -66,9 +71,8 @@ const RulesModal = ({ isOpen, onClose }: RulesModalProps) => {
             </ul>
           </div>
         </div>
-
         <DialogFooter>
-          <Button onClick={onClose}>확인</Button>
+          <Button onClick={closeRuleModal}>확인</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

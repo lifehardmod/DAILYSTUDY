@@ -11,12 +11,12 @@ export interface UserCardProps {
 }
 
 const UserCard = ({ user, setSelectedUserId }: UserCardProps) => {
-  const setIsModalOpen = useModalStore((state) => state.setIsModalOpen);
+  const openExcuseModal = useModalStore((state) => state.openExcuseModal);
 
   return (
     <div
       key={user.userId}
-      className="bg-white border border-gray-400 rounded-xs hover:shadow-md p-6 flex flex-col gap-4"
+      className="bg-white border border-gray-400 rounded-sm hover:shadow-md p-6 flex flex-col gap-4"
     >
       {/* 상단 이름 및 제출 현황 */}
       <div className="flex items-center justify-between">
@@ -36,7 +36,7 @@ const UserCard = ({ user, setSelectedUserId }: UserCardProps) => {
               size="sm"
               onClick={() => {
                 setSelectedUserId(user.userId);
-                setIsModalOpen(true);
+                openExcuseModal();
               }}
               className="flex items-center gap-2 rounded-sm border-gray-600"
             >
@@ -49,7 +49,7 @@ const UserCard = ({ user, setSelectedUserId }: UserCardProps) => {
       {user.status === "PASS" && (
         <div>
           {user.problems?.[0].excuse ? (
-            <div className="flex items-start gap-3">
+            <div className="flex items-center gap-1 bg-gray-100 p-4 border border-gray-400">
               <MessageSquare className="h-4 w-4 mt-0.5 text-gray-600" />
               <div>
                 <p className="text-sm text-black font-medium">
@@ -65,7 +65,7 @@ const UserCard = ({ user, setSelectedUserId }: UserCardProps) => {
               {user.problems?.map((problem, index) => (
                 <li
                   key={index}
-                  className="space-y-2 border border-gray-300 bg-gray-50 rounded-xs p-4"
+                  className="space-y-2 border border-gray-400 bg-gray-100 rounded-xs p-4"
                 >
                   <div className="flex items-center gap-2">
                     <span className="font-medium  text-gray-900">

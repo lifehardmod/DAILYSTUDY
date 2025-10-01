@@ -1,4 +1,4 @@
-import { SubmitExcuseAPI } from "@/api/SubmissionAPI";
+import { SubmitExcuseAPI } from "@/components/dailySubmissonStat/api/SubmissionAPI";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const useSubmitExcuse = () => {

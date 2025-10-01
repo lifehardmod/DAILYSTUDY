@@ -1,6 +1,6 @@
-import { Button } from "@/shared/ui/button";
+import { Button } from "@/components/shared";
 import { USER_LIST } from "@/constants/userList";
-import { useState } from "react";
+import { UserSubmission } from "@/types/submission";
 
 // 날짜를 한국어 형식으로 포맷팅하는 함수
 function formatKoreanDate(dateStr: string) {
@@ -11,49 +11,33 @@ function formatKoreanDate(dateStr: string) {
 }
 
 interface YesterdayMissedAlertProps {
+  failedUsers: UserSubmission[];
   date: string;
 }
 
-export function YesterdayMissedAlert({ date }: YesterdayMissedAlertProps) {
-  const [loading, setLoading] = useState(false);
-  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
-
+export function YesterdayMissedAlert({
+  failedUsers,
+  date,
+}: YesterdayMissedAlertProps) {
   const fetchMissed = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_URL}/submissions?date=${date}`);
-      if (!response.ok) throw new Error("불러오기 실패");
-      const data = await response.json();
-      const failed = (data.users || []).filter(
-        (user: { status: string }) => user.status !== "PASS"
-      );
-      // 이름 변환
-      const userNames = failed.map((user: { userId: string }) => {
-        const userInfo = USER_LIST.find((u) => u.handle === user.userId);
-        return userInfo ? userInfo.name : user.userId;
-      });
-      if (userNames.length === 0) {
-        alert(`${formatKoreanDate(date)} 미제출자가 없습니다!`);
-        return;
-      }
-      const text = `${formatKoreanDate(date)}\n당첨자 ${userNames.join(
-        ", "
-      )}, 당첨!!!`;
-      await navigator.clipboard.writeText(text);
-      alert("클립보드에 복사되었습니다!\n" + text);
-    } catch {
-      alert("복사에 실패했습니다.");
-    } finally {
-      setLoading(false);
-    }
+    // 이름 변환
+    const userNames = failedUsers.map((user) => {
+      const userInfo = USER_LIST.find((u) => u.handle === user.userId);
+      return userInfo ? userInfo.name : user.userId;
+    });
+
+    const text = `${formatKoreanDate(date)}\n당첨자 ${userNames.join(
+      ", "
+    )} 당첨!!!`;
+    await navigator.clipboard.writeText(text);
+    alert("클립보드에 복사되었습니다!\n" + text);
   };
 
   return (
     <Button
       size="sm"
       onClick={fetchMissed}
-      className="bg-orange-500 text-white h-8"
-      disabled={loading}
+      className="bg-orange-500 text-white h-8 w-fit"
     >
       돈 주세요
     </Button>

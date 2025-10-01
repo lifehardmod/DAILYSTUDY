@@ -5,13 +5,14 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "../../shared/ui/dialog";
+} from "@/components/shared/dialog";
+
 import { MessageSquare } from "lucide-react";
-import { RadioGroup, RadioGroupItem } from "../../shared/ui/radio-group";
-import { Textarea } from "../../components/ui/textarea";
-import { Checkbox } from "../../components/ui/checkbox";
-import { Label } from "../../shared/ui/label";
-import { Button } from "../../shared/ui/button";
+import { RadioGroup, RadioGroupItem } from "@/components/shared/radio-group";
+import { Textarea, Checkbox, Label, Button } from "@/components/shared";
+import { useSubmitExcuse } from "@/hook/useSubmitExcuse";
+import { getTodayString } from "@/lib/utils";
+import useModalStore from "@/store/useModalStore";
 
 const EXCUSE_LABELS = [
   "다른 사이트를 이용했어요",
@@ -23,17 +24,21 @@ const EXCUSE_LABELS = [
 
 interface ExcuseModalProps {
   isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (excuse: { excuse: string }) => void;
+  userId: string | null;
 }
 
-const ExcuseModal = ({ isOpen, onClose, onSubmit }: ExcuseModalProps) => {
+const ExcuseModal = ({ isOpen, userId }: ExcuseModalProps) => {
   const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
   const [otherDetail, setOtherDetail] = useState("");
   const [showKakaoCheck, setShowKakaoCheck] = useState(false);
   const [kakaoConfirmed, setKakaoConfirmed] = useState(false);
+  const closeModal = useModalStore((state) => state.closeExcuseModal);
+
+  const { mutate: submitExcuse } = useSubmitExcuse();
 
   const handleExcuseSubmit = () => {
+    if (!userId) return;
+
     if (!selectedLabel) return;
 
     if (!showKakaoCheck) {
@@ -53,20 +58,17 @@ const ExcuseModal = ({ isOpen, onClose, onSubmit }: ExcuseModalProps) => {
       excuseValue = "payed";
     }
 
-    onSubmit({
+    submitExcuse({
+      userId: userId,
       excuse: excuseValue,
+      date: getTodayString(),
     });
-    onClose();
 
-    // Reset states
-    setSelectedLabel(null);
-    setOtherDetail("");
-    setShowKakaoCheck(false);
-    setKakaoConfirmed(false);
+    handleClose();
   };
 
   const handleClose = () => {
-    onClose();
+    closeModal();
     // Reset states
     setSelectedLabel(null);
     setOtherDetail("");

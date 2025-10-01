@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { getTodayString, formatDate } from "@/shared/lib/utils";
+import { getTodayString, formatDate } from "@/lib/utils";
 
 // 초기 날짜를 props로 받을 수 있게 설계 (없으면 오늘 날짜)
 export const useDateNavigator = (initialDate = getTodayString()) => {
