@@ -41,6 +41,7 @@ const StudyCheck = () => {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["lastCrawlTime"] });
         queryClient.invalidateQueries({ queryKey: ["submissions"] });
+        alert("업데이트(크롤링) 완료");
       },
       onError: (error: Error) => {
         alert(error.message);
