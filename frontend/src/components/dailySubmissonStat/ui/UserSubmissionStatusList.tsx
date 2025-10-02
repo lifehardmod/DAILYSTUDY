@@ -1,4 +1,4 @@
-import { UserSubmission } from "@/types/submission";
+import { UserSubmission } from "@/components/dailySubmissonStat/types/submission";
 import UserCard from "./UserCard";
 
 export interface UserSubmissionstatusListProps {

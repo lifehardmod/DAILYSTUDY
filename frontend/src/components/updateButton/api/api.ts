@@ -1,4 +1,4 @@
-import { APIResponse } from "@/types/api";
+import { APIResponse } from "@/components/shared/type/api";
 import { UpdateCrawlResponse } from "../type/type";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";

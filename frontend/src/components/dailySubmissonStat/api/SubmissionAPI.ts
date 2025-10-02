@@ -1,6 +1,6 @@
-import { APIResponse } from "@/types/api";
-import { ExcuseResponse } from "@/types/excuse";
-import { SubmissionResponse } from "@/types/submission";
+import { APIResponse } from "@/components/shared/type/api";
+import { ExcuseResponse } from "@/components/dailySubmissonStat/types/excuse";
+import { SubmissionResponse } from "@/components/dailySubmissonStat/types/submission";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 

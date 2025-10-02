@@ -1,4 +1,4 @@
-import { Button } from "@/components/shared";
+import { Button } from "@/components/shared/ui";
 import { formatLastCrawlTime } from "../util/util";
 
 interface UpdateButtonProps {

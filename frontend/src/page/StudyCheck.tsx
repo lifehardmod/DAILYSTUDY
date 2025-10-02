@@ -11,7 +11,7 @@ import WeeklyStats from "@/components/weeklyStats/ui/WeeklyStats";
 import { useDateNavigator } from "@/hook/useDateNavigator";
 import useModalStore from "@/store/useModalStore";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { UserSubmission } from "@/types/submission";
+import { UserSubmission } from "@/components/dailySubmissonStat/types/submission";
 
 const StudyCheck = () => {
   const openRulesModal = useModalStore((state) => state.openRulesModal);

@@ -4,9 +4,9 @@ import {
   DialogTitle,
   DialogFooter,
   DialogHeader,
-} from "@/components/shared/dialog";
+} from "@/components/shared/ui/dialog";
 import { Info } from "lucide-react";
-import { Button } from "@/components/shared";
+import { Button } from "@/components/shared/ui";
 import useModalStore from "@/store/useModalStore";
 
 interface RulesModalProps {

@@ -1,4 +1,4 @@
-import { Button } from "@/components/shared/button";
+import { Button } from "@/components/shared/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { UserStat } from "../type/type";
 import { useWeekNavigator } from "../hook/useWeekNavigator";

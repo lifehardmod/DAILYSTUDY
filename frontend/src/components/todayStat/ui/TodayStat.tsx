@@ -1,5 +1,5 @@
-import SubmitStatusCard from "@/components/SubmitStatusCard";
-import { UserSubmission } from "@/types/submission";
+import SubmitStatusCard from "@/components/todayStat/ui/SubmitStatusCard";
+import { UserSubmission } from "@/components/dailySubmissonStat/types/submission";
 import { Users } from "lucide-react";
 
 interface TodayStatProps {

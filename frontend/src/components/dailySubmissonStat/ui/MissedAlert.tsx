@@ -1,4 +1,4 @@
-import { Button } from "@/components/shared";
+import { Button } from "@/components/shared/ui";
 import { USER_LIST } from "@/constants/userList";
 import { useState } from "react";
 

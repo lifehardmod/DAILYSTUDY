@@ -1,6 +1,6 @@
-import { Button } from "@/components/shared";
+import { Button } from "@/components/shared/ui";
 import { USER_LIST } from "@/constants/userList";
-import { UserSubmission } from "@/types/submission";
+import { UserSubmission } from "@/components/dailySubmissonStat/types/submission";
 
 // 날짜를 한국어 형식으로 포맷팅하는 함수
 function formatKoreanDate(dateStr: string) {

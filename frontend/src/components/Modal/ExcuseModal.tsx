@@ -5,11 +5,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/shared/dialog";
+} from "@/components/shared/ui/dialog";
 
 import { MessageSquare } from "lucide-react";
-import { RadioGroup, RadioGroupItem } from "@/components/shared/radio-group";
-import { Textarea, Checkbox, Label, Button } from "@/components/shared";
+import { RadioGroup, RadioGroupItem } from "@/components/shared/ui/radio-group";
+import { Textarea, Checkbox, Label, Button } from "@/components/shared/ui";
 import { useSubmitExcuse } from "@/hook/useSubmitExcuse";
 import { getTodayString } from "@/lib/utils";
 import useModalStore from "@/store/useModalStore";
@@ -25,17 +25,17 @@ const EXCUSE_LABELS = [
 interface ExcuseModalProps {
   isOpen: boolean;
   userId: string | null;
+  date: string;
 }
 
-const ExcuseModal = ({ isOpen, userId }: ExcuseModalProps) => {
+const ExcuseModal = ({ isOpen, userId, date }: ExcuseModalProps) => {
   const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
   const [otherDetail, setOtherDetail] = useState("");
   const [showKakaoCheck, setShowKakaoCheck] = useState(false);
   const [kakaoConfirmed, setKakaoConfirmed] = useState(false);
   const closeModal = useModalStore((state) => state.closeExcuseModal);
-
+  console.log(date);
   const { mutate: submitExcuse } = useSubmitExcuse();
-
   const handleExcuseSubmit = () => {
     if (!userId) return;
 
@@ -61,7 +61,7 @@ const ExcuseModal = ({ isOpen, userId }: ExcuseModalProps) => {
     submitExcuse({
       userId: userId,
       excuse: excuseValue,
-      date: getTodayString(),
+      date: date,
     });
 
     handleClose();

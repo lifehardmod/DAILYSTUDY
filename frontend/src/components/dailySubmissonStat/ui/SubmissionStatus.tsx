@@ -2,13 +2,13 @@ import { useState } from "react";
 import useModalStore from "@/store/useModalStore";
 import Pending from "@/components/Pending";
 import Error from "@/components/Error";
-import { Button } from "@/components/shared";
+import { Button } from "@/components/shared/ui";
 import { ChevronLeft, ChevronRight, Trophy, XCircle } from "lucide-react";
-import UserSubmissionStatusList from "@/components/UserSubmissionStatusList";
-import { YesterdayMissedAlert } from "@/components/YesterdayMissedAlert";
-import { MissedAlert } from "@/components/MissedAlert";
+import UserSubmissionStatusList from "@/components/dailySubmissonStat/ui/UserSubmissionStatusList";
+import { YesterdayMissedAlert } from "@/components/dailySubmissonStat/ui/YesterdayMissedAlert";
+import { MissedAlert } from "@/components/dailySubmissonStat/ui/MissedAlert";
 import ExcuseModal from "@/components/Modal/ExcuseModal";
-import { UserSubmission } from "@/types/submission";
+import { UserSubmission } from "@/components/dailySubmissonStat/types/submission";
 import UpdateButton from "@/components/updateButton/ui/UpdateButton";
 
 interface SubmissionStatusProps {
@@ -52,7 +52,6 @@ const SubmissionStatus = ({
   if (error) {
     return <Error error={error} />;
   }
-
   return (
     <div className="mx-auto space-y-8">
       <div className="space-y-6">
@@ -110,7 +109,11 @@ const SubmissionStatus = ({
         )}
       </div>
 
-      <ExcuseModal isOpen={isExcuseModalOpen} userId={selectedUserId} />
+      <ExcuseModal
+        date={formattedDate}
+        isOpen={isExcuseModalOpen}
+        userId={selectedUserId}
+      />
     </div>
   );
 };

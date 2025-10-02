@@ -1,8 +1,7 @@
 import { CheckCircle, MessageSquare, Clock } from "lucide-react";
 import { UserSubmission } from "../types/submission";
 import { getUserName } from "@/lib/utils";
-import { Badge } from "@/components/shared/badge";
-import { Button } from "@/components/shared/button";
+import { Badge, Button } from "@/components/shared/ui";
 import useModalStore from "@/store/useModalStore";
 
 export interface UserCardProps {
