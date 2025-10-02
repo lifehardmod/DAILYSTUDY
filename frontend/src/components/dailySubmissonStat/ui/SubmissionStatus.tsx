@@ -110,7 +110,7 @@ const SubmissionStatus = ({
       </div>
 
       <ExcuseModal
-        date={formattedDate}
+        date={date}
         isOpen={isExcuseModalOpen}
         userId={selectedUserId}
       />
