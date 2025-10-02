@@ -11,7 +11,6 @@ import { MessageSquare } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/shared/ui/radio-group";
 import { Textarea, Checkbox, Label, Button } from "@/components/shared/ui";
 import { useSubmitExcuse } from "@/hook/useSubmitExcuse";
-import { getTodayString } from "@/lib/utils";
 import useModalStore from "@/store/useModalStore";
 
 const EXCUSE_LABELS = [
@@ -34,7 +33,6 @@ const ExcuseModal = ({ isOpen, userId, date }: ExcuseModalProps) => {
   const [showKakaoCheck, setShowKakaoCheck] = useState(false);
   const [kakaoConfirmed, setKakaoConfirmed] = useState(false);
   const closeModal = useModalStore((state) => state.closeExcuseModal);
-  console.log(date);
   const { mutate: submitExcuse } = useSubmitExcuse();
   const handleExcuseSubmit = () => {
     if (!userId) return;
