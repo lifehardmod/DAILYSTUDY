@@ -46,3 +46,14 @@ export interface UserStat {
   userId: string;
   payedCount: number;
 }
+
+export interface MissedSubmission {
+  userId: string;
+  date: string;
+}
+
+export interface MissedSubmissionsResponse {
+  startDate: string;
+  endDate: string;
+  missedSubmissions: MissedSubmission[];
+}

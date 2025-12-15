@@ -5,7 +5,11 @@ import { USER_LIST } from "../constants/users";
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
-import { APIResponse, WeeklyStatsResponse } from "../type/types";
+import {
+  APIResponse,
+  WeeklyStatsResponse,
+  MissedSubmissionsResponse,
+} from "../type/types";
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -124,6 +128,93 @@ router.get("/", async (req, res) => {
       endDate: effectiveEndDate.format("YYYY-MM-DD"),
       totalDays: days,
       users: result,
+    },
+  };
+
+  return res.json(response);
+});
+
+// 미제출 기록 조회 API (start~end 기간)
+router.get("/missed", async (req, res) => {
+  const { start, end } = req.query;
+
+  if (typeof start !== "string" || typeof end !== "string") {
+    return res.status(400).json({ error: "start, end 쿼리가 필요합니다" });
+  }
+
+  const startDate = dayjs.tz(start, "Asia/Seoul").startOf("day");
+  const endDate = dayjs.tz(end, "Asia/Seoul").startOf("day");
+  const now = dayjs().tz("Asia/Seoul").startOf("day");
+  const yesterday = now.subtract(1, "day");
+
+  if (!startDate.isValid() || !endDate.isValid()) {
+    return res.status(400).json({ error: "날짜 형식이 잘못되었습니다" });
+  }
+
+  if (startDate.isAfter(endDate)) {
+    return res
+      .status(400)
+      .json({ error: "시작일이 종료일보다 늦을 수 없습니다" });
+  }
+
+  // 종료일이 어제보다 미래면 어제로 제한
+  const effectiveEndDate = endDate.isAfter(yesterday) ? yesterday : endDate;
+
+  if (startDate.isAfter(effectiveEndDate)) {
+    return res.status(400).json({ error: "조회 가능한 날짜 범위가 없습니다" });
+  }
+
+  // 시작일부터 종료일까지의 날짜 목록 생성
+  const days = effectiveEndDate.diff(startDate, "day") + 1;
+  const allDates = Array.from({ length: days }).map((_, i) => {
+    return startDate.add(i, "day").format("YYYY-MM-DD");
+  });
+
+  // 해당 기간의 모든 제출 기록 가져오기
+  const submissions = await prisma.dailySubmission.findMany({
+    where: {
+      date: {
+        gte: new Date(start),
+        lte: new Date(effectiveEndDate.format("YYYY-MM-DD")),
+      },
+    },
+    select: {
+      userId: true,
+      date: true,
+    },
+  });
+
+  // 유저별 제출한 날짜 Set 생성
+  const submittedDates: Record<string, Set<string>> = {};
+  for (const { userId, date } of submissions) {
+    if (!submittedDates[userId]) {
+      submittedDates[userId] = new Set();
+    }
+    submittedDates[userId].add(dayjs(date).format("YYYY-MM-DD"));
+  }
+
+  // 미제출 기록 계산
+  const missedSubmissions: { userId: string; date: string }[] = [];
+
+  for (const { handle } of USER_LIST) {
+    const userSubmitted = submittedDates[handle] || new Set();
+    for (const date of allDates) {
+      if (!userSubmitted.has(date)) {
+        missedSubmissions.push({ userId: handle, date });
+      }
+    }
+  }
+
+  // 날짜순 정렬
+  missedSubmissions.sort((a, b) => a.date.localeCompare(b.date));
+
+  const response: APIResponse<MissedSubmissionsResponse> = {
+    success: true,
+    message: "미제출 기록을 가져왔습니다",
+    data: {
+      startDate: startDate.format("YYYY-MM-DD"),
+      endDate: effectiveEndDate.format("YYYY-MM-DD"),
+      missedSubmissions,
     },
   };
 
