@@ -15,6 +15,7 @@ export const useSubmitExcuse = () => {
     }) => SubmitExcuseAPI(userId, date, excuse),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["submissions"] });
+      queryClient.invalidateQueries({ queryKey: ["missedSubmissions"] });
     },
     onError: (error: Error) => {
       alert(error.message);

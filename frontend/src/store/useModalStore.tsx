@@ -7,6 +7,9 @@ interface ModalStore {
   openRulesModal: () => void;
   closeExcuseModal: () => void;
   closeRulesModal: () => void;
+  isMissedSubmissionListModalOpen: boolean;
+  openMissedSubmissionListModal: () => void;
+  closeMissedSubmissionListModal: () => void;
 }
 
 const useModalStore = create<ModalStore>((set) => ({
@@ -16,6 +19,11 @@ const useModalStore = create<ModalStore>((set) => ({
   openRulesModal: () => set({ isRulesModalOpen: true }),
   closeExcuseModal: () => set({ isExcuseModalOpen: false }),
   closeRulesModal: () => set({ isRulesModalOpen: false }),
+  isMissedSubmissionListModalOpen: false,
+  openMissedSubmissionListModal: () =>
+    set({ isMissedSubmissionListModalOpen: true }),
+  closeMissedSubmissionListModal: () =>
+    set({ isMissedSubmissionListModalOpen: false }),
 }));
 
 export default useModalStore;

@@ -12,10 +12,14 @@ import { useDateNavigator } from "@/hook/useDateNavigator";
 import useModalStore from "@/store/useModalStore";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { UserSubmission } from "@/components/dailySubmissonStat/types/submission";
+import MissedSubmissionListModal from "@/components/Modal/MissedSubmissionListModal";
 
 const StudyCheck = () => {
   const openRulesModal = useModalStore((state) => state.openRulesModal);
   const isRulesModalOpen = useModalStore((state) => state.isRulesModalOpen);
+  const openMissedSubmissionListModal = useModalStore(
+    (state) => state.openMissedSubmissionListModal
+  );
   const { date, formattedDate, isToday, goToPreviousDay, goToNextDay } =
     useDateNavigator();
   const queryClient = useQueryClient();
@@ -70,8 +74,28 @@ const StudyCheck = () => {
           failedUsers={failedUsers || []}
           totalUsers={submissions?.data?.users?.length || 0}
         />
-        <div className="flex justify-center">
+        <div className="flex justify-center gap-4">
           <RuleButton setIsRulesModalOpen={openRulesModal} />
+          <button
+            className="
+              relative overflow-hidden
+              px-4 py-2 rounded-sm
+              text-sm font-semibold text-white
+              bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500
+              bg-[length:200%_200%] animate-gradient animate-shake
+              active:scale-95
+              transition-all duration-300 ease-out
+              before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/30 before:to-transparent
+              before:translate-x-[-200%] hover:before:translate-x-[200%] before:transition-transform before:duration-700
+              after:absolute after:inset-[-2px] after:rounded-full after:bg-gradient-to-r after:from-pink-500 after:via-purple-500 after:to-indigo-500 after:blur-md after:opacity-50 after:-z-10
+              border-2 border-white/20
+            "
+            onClick={() => openMissedSubmissionListModal()}
+          >
+            <span className="relative z-10 flex items-center gap-2">
+              혹시 깜빡 잊으신분?
+            </span>
+          </button>
         </div>
       </div>
       <SubmissionStatus
@@ -90,6 +114,7 @@ const StudyCheck = () => {
         isCrawlUpdatePending={isCrawlUpdatePending}
       />
       <RulesModal isOpen={isRulesModalOpen} />
+      <MissedSubmissionListModal />
     </div>
   );
 };
