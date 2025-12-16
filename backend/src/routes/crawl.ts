@@ -89,9 +89,14 @@ router.get("/", async (_req, res) => {
         );
 
         // 새로 처리할 제출들 (이미 PASS/IMAGE로 기록된 것 제외)
-        const newSubmissions = daySubmissions.filter(
-          (s) => !existingPassOrImage.has(s.problemId)
-        );
+        // + 같은 문제 여러 번 맞은 경우 첫 번째만 사용 (중복 제거)
+        const seenProblemIds = new Set<number>();
+        const newSubmissions = daySubmissions.filter((s) => {
+          if (existingPassOrImage.has(s.problemId)) return false;
+          if (seenProblemIds.has(s.problemId)) return false;
+          seenProblemIds.add(s.problemId);
+          return true;
+        });
 
         if (newSubmissions.length === 0) {
           // 모든 제출이 이미 처리됨
@@ -127,8 +132,16 @@ router.get("/", async (_req, res) => {
             for (const submission of submissionsWithMeta) {
               const tier = levelToTier(submission.level);
 
-              await prisma.dailySubmission.create({
-                data: {
+              await prisma.dailySubmission.upsert({
+                where: {
+                  userId_date_problemId: {
+                    userId: handle,
+                    date: dateObj,
+                    problemId: submission.problemId,
+                  },
+                },
+                update: {}, // 이미 있으면 아무것도 안 함
+                create: {
                   userId: handle,
                   date: dateObj,
                   status: "PASS",
@@ -163,9 +176,17 @@ router.get("/", async (_req, res) => {
           // Tier 계산
           const tier = levelToTier(level);
 
-          // DB에 CREATE (PASS)
-          await prisma.dailySubmission.create({
-            data: {
+          // DB에 UPSERT (PASS) - 동시 요청 시 중복 방지
+          await prisma.dailySubmission.upsert({
+            where: {
+              userId_date_problemId: {
+                userId: handle,
+                date: dateObj,
+                problemId,
+              },
+            },
+            update: {}, // 이미 있으면 아무것도 안 함
+            create: {
               userId: handle,
               date: dateObj,
               status: "PASS",
