@@ -6,6 +6,5 @@ export const USER_LIST = [
   { name: "한재서", handle: "hanahyun1", etc: "normal" },
   { name: "김용명", handle: "kunzatt2501", etc: "normal" },
   { name: "문종하", handle: "qq3477", etc: "normal" },
-  { name: "김유정", handle: "t0mat0", etc: "normal" },
   { name: "서주원", handle: "tjwndnjs7", etc: "normal" },
 ];
